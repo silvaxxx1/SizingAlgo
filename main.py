@@ -11,7 +11,19 @@ def main():
     pwg, wind, Nwt = wind_model()
     
     # Further logic to perform simulation, charge, and discharge
+    # Calculate the cost of energy before running the AL ALgorithms (COE)
+    # compare the results of multiple algos : 
+    # 1- ANt Lion 
+    # 2- PSO
+    # 3- Cuso nest ... 
+
+    # WE WILL USE ONE TYPE OF VECHICLE IN THIS SIMULATION (TESLA MODEL 3) / (NESSAN)
+
+
+    # CHANGEING THE DATA LOCATION OF THE DATA :
+    # NASA OR REAL LIFE DATA FROM THE LOCATION 
     
+
     plot_results()  # Generate all your plots here
 
 if __name__ == '__main__':
