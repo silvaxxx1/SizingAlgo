@@ -11,3 +11,8 @@ def battery_model(x):
     SOCmin = pd.read_excel('SOCmin.xlsx', sheet_name=0, header=None).values.flatten()
     SOCmax = pd.read_excel('SOCmax.xlsx', sheet_name=0, usecols=[1]).values.flatten()
     return Bcap, SOCmin, SOCmax
+
+
+# LIBYA : 
+
+# TESSLA 

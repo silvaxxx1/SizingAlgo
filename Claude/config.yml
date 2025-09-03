@@ -1,0 +1,206 @@
+# config.yaml - V2G Microgrid Optimization Pipeline Configuration
+# Based on thesis parameters and MATLAB code specifications
+
+# System location (Tripoli, Libya from thesis)
+location:
+  name: "Tripoli, Libya"
+  latitude: 32.8872
+  longitude: 13.1913
+  timezone: "Africa/Tripoli"
+
+# Data file paths
+data_paths:
+  weather_data_path: "data/weather_data.csv"
+  load_data_path: "data/load_data.csv" 
+  ev_data_path: "data/ev_data.csv"
+  economic_parameters_path: "data/economic_parameters.json"
+
+# Component specifications (based on MATLAB code parameters)
+components:
+  photovoltaic:
+    rated_power_per_panel: 325  # W (from MATLAB: pv_eff parameter)
+    temp_coefficient: -3.7e-3   # 1/°C (kt in MATLAB)
+    noct: 45                    # °C (NOCT in MATLAB)
+    reference_irradiance: 1000  # W/m² (Gref in MATLAB)
+    reference_temperature: 25   # °C (Tref in MATLAB)
+    system_efficiency: 0.95     # Overall system efficiency
+    
+  wind_turbine:
+    rated_power_per_turbine: 5000  # W (pr in MATLAB)
+    cut_in_speed: 2.5             # m/s (vin in MATLAB)
+    cut_out_speed: 40             # m/s (vcut in MATLAB) 
+    rated_speed: 9.5              # m/s (vr in MATLAB)
+    hub_height: 70                # m (h2 in MATLAB)
+    reference_height: 43.6        # m (h1 in MATLAB)
+    power_law_exponent: 0.25      # alfa in MATLAB (heavily forested landscape)
+    system_efficiency: 0.95       # eff in MATLAB
+    
+  battery:
+    capacity_per_unit: 35380    # Wh (calculated from MATLAB: Bcap formula)
+    voltage: 48                 # V (Vs in MATLAB)
+    depth_of_discharge: 0.8     # dod in MATLAB
+    soc_min: 0.2               # Minimum state of charge
+    soc_max: 1.0               # Maximum state of charge
+    round_trip_efficiency: 0.85 # n_bat in MATLAB
+    inverter_efficiency: 0.95   # uinv in MATLAB
+    converter_efficiency: 0.95  # uconv in MATLAB
+    autonomy_days: 3            # AD in MATLAB
+    
+  electric_vehicle:
+    capacity_per_vehicle: 24000  # Wh (Evmax in MATLAB - 24kWh option)
+    soc_min: 0.2                # Minimum allowed SOC
+    soc_max: 0.95               # Maximum allowed SOC  
+    charge_rate: 7.2            # kW (C_Rate in MATLAB)
+    discharge_rate: 7.2         # kW (D_Rate in MATLAB)
+    charging_efficiency: 0.9    # Bidirectional charging efficiency
+    critical_soc_threshold: 0.2 # Critical SOC level (Evmax*0.2 in MATLAB)
+    
+  grid:
+    buy_price: 0.023           # $/kWh (Grid_p in MATLAB)
+    sell_price: 0.015          # $/kWh (Grid_sale in MATLAB)
+    max_import_power: null     # kW (unlimited if null)
+    max_export_power: null     # kW (unlimited if null)
+
+# Optimization parameters
+optimization:
+  # Algorithm selection: IALO, ALO, PSO, CSA
+  algorithms: ["IALO", "ALO", "PSO", "CSA"]
+  default_algorithm: "IALO"
+  
+  # Population and iteration settings
+  population_size: 50
+  max_iterations: 100
+  
+  # IALO specific parameters
+  ialo:
+    alpha: 0.01              # Lévy flight step size parameter
+    beta: 1.5                # Lévy flight distribution parameter
+    elite_ratio: 0.1         # Ratio of elite antlions
+    levy_probability: 0.3    # Probability of applying Lévy flight
+  
+  # PSO specific parameters  
+  pso:
+    inertia_weight: 0.9      # Initial inertia weight
+    cognitive_param: 2.0     # Cognitive parameter (c1)
+    social_param: 2.0        # Social parameter (c2)
+    min_inertia: 0.4         # Minimum inertia weight
+    
+  # CSA specific parameters
+  csa:
+    pa: 0.25                 # Discovery rate of alien eggs
+    step_size: 0.01          # Step size parameter
+
+# Design variable bounds (from MATLAB optimization bounds)
+bounds:
+  n_pv: [0, 100]            # Number of PV panels
+  n_wt: [0, 50]             # Number of wind turbines  
+  n_bt: [0, 100]            # Number of batteries
+  autonomy_days: [0, 5]     # Days of autonomy
+
+# Constraint limits
+constraints:
+  lpsp_max: 0.01           # Maximum allowable LPSP (1%)
+  ref_min: 0.5             # Minimum renewable energy fraction (50%)
+  reliability_min: 0.99    # Minimum system reliability
+
+# Economic parameters (based on MATLAB economic analysis)
+economic:
+  interest_rate: 0.03       # Real interest rate (REAL_INTREST/100 in MATLAB)
+  project_lifetime: 20      # Project lifetime in years
+  inflation_rate: 0.025     # Annual inflation rate
+  discount_rate: 0.05       # Discount rate for NPV calculations
+  
+  # Component costs ($/unit)
+  component_costs:
+    pv_panel: 200           # $ per panel
+    wind_turbine: 2000      # $ per kW
+    battery: 300            # $ per kWh  
+    converter: 150          # $ per kW
+    inverter: 100           # $ per kW
+    installation_factor: 0.2 # Installation cost as fraction of equipment
+    maintenance_factor: 0.02 # Annual maintenance as fraction of capital
+    
+  # Grid tariff structure
+  grid_tariffs:
+    buy_price: 0.023        # $/kWh for purchasing from grid
+    sell_price: 0.015       # $/kWh for selling to grid
+    demand_charge: 0        # $/kW (if applicable)
+    connection_fee: 0       # $/month (if applicable)
+
+# Monte Carlo simulation parameters
+monte_carlo:
+  num_simulations: 1000     # Number of Monte Carlo runs
+  ev_scenarios: [10, 30, 60] # EV fleet sizes to analyze
+  
+  # EV behavior parameters (for synthetic data generation)
+  ev_patterns:
+    arrival_time_mean: 18.0    # Mean arrival time (6 PM)
+    arrival_time_std: 2.0      # Standard deviation
+    departure_time_mean: 7.0   # Mean departure time (7 AM)  
+    departure_time_std: 2.0    # Standard deviation
+    soc_arrival_mean: 0.6      # Mean SOC upon arrival
+    soc_arrival_std: 0.2       # SOC standard deviation
+    daily_consumption_mean: 12  # Mean daily energy consumption (kWh)
+    daily_consumption_std: 4    # Standard deviation
+    
+  # Uncertainty parameters
+  weather_uncertainty: 0.1    # Weather forecast uncertainty (10%)
+  load_uncertainty: 0.15      # Load forecast uncertainty (15%)
+  component_uncertainty: 0.05  # Component performance uncertainty (5%)
+
+# Sensitivity analysis parameters  
+sensitivity_analysis:
+  parameters:
+    solar_irradiance: [0.8, 0.9, 1.0, 1.1, 1.2]  # Multiplication factors
+    wind_speed: [0.8, 0.9, 1.0, 1.1, 1.2]        # Multiplication factors
+    load_demand: [0.8, 0.9, 1.0, 1.1, 1.2]       # Multiplication factors
+    battery_cost: [0.8, 0.9, 1.0, 1.1, 1.2]      # Multiplication factors
+    grid_buy_price: [0.8, 0.9, 1.0, 1.1, 1.2]    # Multiplication factors
+    
+  output_metrics: ["coe", "lpsp", "ref", "npc"]   # Metrics to analyze
+
+# Output and logging configuration
+output:
+  base_directory: "outputs/"
+  subdirectories:
+    optimization_results: "optimization_results/"
+    figures: "figures/"
+    reports: "reports/"
+    data: "processed_data/"
+    
+  file_formats:
+    data: "csv"              # CSV for data files
+    figures: "png"           # PNG for figures (also supports pdf, svg)
+    reports: "html"          # HTML for reports (also supports pdf)
+    
+  figure_settings:
+    dpi: 300                 # Resolution for saved figures
+    format: "png"            # Default figure format
+    bbox_inches: "tight"     # Tight bounding box
+    
+# Logging configuration
+logging:
+  level: "INFO"              # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  log_file: "outputs/pipeline.log"
+  console_output: true       # Also log to console
+  max_file_size: "10MB"      # Maximum log file size
+  backup_count: 5            # Number of backup log files
+
+# Parallel processing settings
+parallel:
+  use_multiprocessing: true  # Enable parallel processing where applicable
+  num_processes: null        # null = auto-detect CPU cores
+  chunk_size: 100           # Chunk size for parallel operations
+
+# Validation settings
+validation:
+  validate_inputs: true      # Validate input data
+  check_convergence: true    # Check optimization convergence
+  tolerance: 1e-6           # Convergence tolerance
+  max_stagnation: 20        # Maximum iterations without improvement
+
+# Advanced settings
+advanced:
+  random_seed: 42           # Random seed for reproducibility
+  memory_limit: "8GB"       # Memory limit for large calculations
+  temp_directory:
