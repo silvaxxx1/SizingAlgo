@@ -203,4 +203,37 @@ validation:
 advanced:
   random_seed: 42           # Random seed for reproducibility
   memory_limit: "8GB"       # Memory limit for large calculations
-  temp_directory:
+  temp_directory: "temp/"      # Temporary files directory
+  cache_enabled: true          # Enable caching for expensive calculations
+  debug_mode: false            # Enable debug mode for development
+
+# Multi-objective optimization weights (for combined objective function)
+multi_objective:
+  weights:
+    coe: 0.4                   # Weight for Cost of Energy
+    lpsp: 0.3                  # Weight for LPSP (penalty)
+    ref: 0.3                   # Weight for REF (benefit)
+  
+  # Scaling factors (from MATLAB code)
+  scaling:
+    lpsp_penalty: 1000         # Large penalty for LPSP violations (gamma in MATLAB)
+    constraint_penalty: 1000   # Penalty for constraint violations
+    balancing_factor: 1.0      # Balancing factor (pf in MATLAB)
+
+# Performance monitoring
+performance:
+  enable_profiling: false      # Enable performance profiling
+  benchmark_mode: false       # Run benchmark tests
+  memory_monitoring: true     # Monitor memory usage
+  
+# Data quality settings
+data_quality:
+  outlier_detection: true     # Detect and handle outliers
+  missing_data_threshold: 0.05 # Maximum fraction of missing data allowed
+  interpolation_method: "linear" # Method for filling missing data
+  
+# Backup and recovery
+backup:
+  auto_backup: true           # Automatically backup results
+  backup_interval: 1000       # Backup every N iterations
+  max_backups: 5             # Maximum number of backup files

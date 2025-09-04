@@ -31,7 +31,7 @@ from analysis.monte_carlo import MonteCarloSimulation
 from analysis.economic_analysis import EconomicAnalysis
 from analysis.sensitivity_analysis import SensitivityAnalysis
 from utils.visualization import Visualizer
-from utils.constants import *
+from utils.constants import * 
 
 def setup_logging(log_level='INFO'):
     """Setup logging configuration"""
