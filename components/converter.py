@@ -49,3 +49,4 @@ class Converter:
             'input_voltage': self.input_voltage,
             'output_voltage': self.output_voltage
         }
+
