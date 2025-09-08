@@ -1,6 +1,6 @@
-
 # optimization/csa.py
 import numpy as np
+import math  # <-- FIX: use the standard math module
 from typing import Callable, List, Tuple
 import logging
 
@@ -56,8 +56,9 @@ class CuckooSearchAlgorithm:
     
     def levy_flight(self, beta: float = 1.5) -> np.ndarray:
         """Generate Levy flight step"""
-        sigma = (np.math.gamma(1 + beta) * np.sin(np.pi * beta / 2) / 
-                (np.math.gamma((1 + beta) / 2) * beta * (2 ** ((beta - 1) / 2)))) ** (1 / beta)
+        # FIX: use math.gamma and math.sin instead of np.math
+        sigma = (math.gamma(1 + beta) * math.sin(math.pi * beta / 2) / 
+                (math.gamma((1 + beta) / 2) * beta * (2 ** ((beta - 1) / 2)))) ** (1 / beta)
         
         u = np.random.normal(0, sigma, self.dimensions)
         v = np.random.normal(0, 1, self.dimensions)
@@ -122,3 +123,43 @@ class CuckooSearchAlgorithm:
                 logging.info(f"CSA Iteration {iteration+1}, Best fitness: {self.best_fitness:.6f}")
         
         return self.best_nest, self.best_fitness, self.convergence_history
+
+
+# ============================
+# Example usage
+# ============================
+if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+
+    # Define an example objective function (Sphere function)
+    def sphere_function(x):
+        return np.sum(x**2)
+
+    # Define search space bounds for each dimension
+    bounds = [(-10, 10), (-10, 10)]  # 2D optimization problem
+
+    # Create CSA optimizer
+    csa = CuckooSearchAlgorithm(
+        objective_function=sphere_function,
+        bounds=bounds,
+        population_size=25,
+        max_iterations=100,
+        pa=0.25,
+        step_size=0.01
+    )
+
+    # Run optimization
+    best_solution, best_fitness, convergence_history = csa.optimize()
+
+    # Print results
+    print("Best solution found:", best_solution)
+    print("Best fitness value:", best_fitness)
+
+    # Plot convergence history
+    plt.figure(figsize=(8, 5))
+    plt.plot(convergence_history, marker='o')
+    plt.xlabel('Iteration')
+    plt.ylabel('Best Fitness Value')
+    plt.title('CSA Convergence History')
+    plt.grid(True)
+    plt.show()

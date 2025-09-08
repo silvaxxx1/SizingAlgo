@@ -130,3 +130,50 @@ class ParticleSwarmOptimizer:
 
 
 
+# Example usage of PSO
+if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    # Define a sample objective function (Sphere function)
+    def sphere_function(x):
+        return np.sum(x**2)
+
+    # Define search space bounds for a 2D problem
+    bounds = [(-10, 10), (-10, 10)]
+
+    # Create PSO optimizer instance
+    pso = ParticleSwarmOptimizer(
+        objective_function=sphere_function,
+        bounds=bounds,
+        swarm_size=30,
+        max_iterations=100,
+        w=0.9,
+        c1=2.0,
+        c2=2.0
+    )
+
+    # Run optimization
+    best_solution, best_fitness, convergence_history = pso.optimize()
+
+    # Print results
+    print("Best solution found:", best_solution)
+    print("Best fitness value:", best_fitness)
+
+    # Plot convergence history
+    plt.figure(figsize=(8, 5))
+    plt.plot(convergence_history, marker='o')
+    plt.xlabel('Iteration')
+    plt.ylabel('Best Fitness Value')
+    plt.title('PSO Convergence History')
+    plt.grid(True)
+    plt.show()
+
+    plt.figure(figsize=(8, 5))
+    plt.plot(convergence_history, marker='o')
+    plt.xlabel('Iteration')
+    plt.ylabel('Best Fitness Value')
+    plt.title('PSO Convergence History')
+    plt.grid(True)
+    plt.savefig("pso_convergence.png")  # Save as PNG
+    print("Convergence plot saved as pso_convergence.png")

@@ -132,4 +132,35 @@ class AntlionOptimizer:
             if iteration % 20 == 0:
                 logging.info(f"ALO Iteration {iteration+1}, Best fitness: {self.best_fitness:.6f}")
         
-        return self.best_solution, self.best_fitness, self.convergence_history
+        return self.best_solution, self.best_fitness, self.convergence_history 
+    
+
+# =====================================================
+# Example Usage (Test Case)
+# =====================================================
+if __name__ == "__main__":
+    # Define a sample objective function (Sphere function)
+    def sphere_function(x):
+        return np.sum(x ** 2)  # Global minimum is at x = [0,0,...,0] with value = 0
+
+    # Problem configuration
+    dimensions = 3
+    bounds = [(-5, 5)] * dimensions  # Search space for each variable
+    population_size = 30
+    max_iterations = 50
+
+    # Create and run ALO
+    alo = AntlionOptimizer(
+        objective_function=sphere_function,
+        bounds=bounds,
+        population_size=population_size,
+        max_iterations=max_iterations
+    )
+
+    best_solution, best_fitness, convergence_history = alo.optimize()
+
+    # Show results
+    print("\n=== ALO Optimization Results ===")
+    print(f"Best Solution Found: {best_solution}")
+    print(f"Best Fitness (Objective Value): {best_fitness:.6f}")
+    print("Convergence History (last 10 values):", convergence_history[-10:])

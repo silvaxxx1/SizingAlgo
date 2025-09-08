@@ -995,86 +995,184 @@ class Visualizer:
         
         logging.info(f"All available plots saved to {base_path}")
 
+
 import os
+from pathlib import Path
 
-# Make sure output folders exist
-output_dir = 'outputs/figures'
-os.makedirs(output_dir, exist_ok=True)
+# Ensure the output directory exists
+output_dir = 'outputs/figures/static'
+Path(output_dir).mkdir(parents=True, exist_ok=True)
 
-# Initialize visualizer
-viz = Visualizer()
+# 1. Initialize the Visualizer
+vis = Visualizer()
+print("Visualizer initialized.")
 
-# -----------------------------
-# Test plot_convergence
-# -----------------------------
-convergence_data = [1000, 850, 720, 650, 600, 580, 570]
-viz.plot_convergence(
-    convergence_data, 
-    show_plot=True, 
-    save_path=os.path.join(output_dir, 'convergence_plot.png')  # save here
-)
+# --- Simulate Data ---
+np.random.seed(42)
+num_hours = 168  # One week
+time_index = pd.to_datetime(pd.date_range('2025-01-01', periods=num_hours, freq='H'))
 
-# -----------------------------
-# Test plot_energy_flows
-# -----------------------------
-hours = 24
-sim_data = pd.DataFrame({
-    'pv_power': np.random.uniform(0, 50, hours),
-    'wt_power': np.random.uniform(0, 30, hours),
-    'load_demand': np.random.uniform(20, 70, hours),
-    'battery_charge': np.random.uniform(0, 20, hours),
-    'battery_discharge': np.random.uniform(0, 15, hours),
-    'ev_charge': np.random.uniform(0, 10, hours),
-    'ev_discharge': np.random.uniform(0, 10, hours),
-    'grid_purchase': np.random.uniform(0, 25, hours),
-    'grid_sale': np.random.uniform(0, 10, hours),
-    'battery_soc': np.random.uniform(0.2, 0.95, hours),
-    'ev_mean_soc': np.random.uniform(0.2, 0.95, hours)
-})
-viz.plot_energy_flows(
-    sim_data, 
-    show_plot=True, 
-    save_path=os.path.join(output_dir, 'energy_flows.png')
-)
-
-# -----------------------------
-# Test plot_monte_carlo_results
-# -----------------------------
-mc_results = {
-    'scenario_1': {'detailed_results': pd.DataFrame({
-        'coe': np.random.uniform(0.1, 0.2, 10),
-        'lpsp': np.random.uniform(0, 0.05, 10),
-        'ref': np.random.uniform(0.4, 0.6, 10),
-        'total_v2g_energy': np.random.uniform(100, 500, 10),
-        'npc': np.random.uniform(1e5, 2e5, 10)
-    })},
-    'scenario_2': {'detailed_results': pd.DataFrame({
-        'coe': np.random.uniform(0.12, 0.22, 10),
-        'lpsp': np.random.uniform(0, 0.05, 10),
-        'ref': np.random.uniform(0.45, 0.65, 10),
-        'total_v2g_energy': np.random.uniform(150, 550, 10),
-        'npc': np.random.uniform(1e5, 2e5, 10)
-    })}
+# 2. Simulate Optimization Convergence
+print("Simulating optimization convergence data...")
+convergence_history = np.logspace(3, 1, num_hours) + np.random.normal(0, 0.5, num_hours)
+convergence_history_ga = np.logspace(3, 1.2, num_hours) + np.random.normal(0, 0.8, num_hours)
+convergence_data = {
+    "Genetic Algorithm": convergence_history_ga.tolist(),
+    "Particle Swarm Optimization": convergence_history.tolist()
 }
-viz.plot_monte_carlo_results(
-    mc_results, 
-    show_plot=True, 
-    save_path=os.path.join(output_dir, 'monte_carlo_results.png')
-)
+print("Simulated convergence data.")
 
-# -----------------------------
-# Test plot_component_sizing
-# -----------------------------
+# 3. Simulate Energy Flow Data
+print("Simulating energy flow data...")
+pv_power = np.maximum(0, 100 * np.sin(np.pi * (np.arange(num_hours) % 24) / 12) + np.random.normal(0, 5, num_hours))
+wt_power = np.maximum(0, 50 + 20 * np.sin(np.pi * (np.arange(num_hours) / 24)) + np.random.normal(0, 10, num_hours))
+load_demand = 120 + 30 * np.sin(np.pi * (np.arange(num_hours) % 24) / 12) + np.random.normal(0, 5, num_hours)
+
+# Simulate battery/EV operations
+battery_charge = np.maximum(0, pv_power - load_demand / 2 - np.random.normal(0, 10, num_hours))
+battery_discharge = np.minimum(0, pv_power - load_demand + np.random.normal(0, 10, num_hours))
+battery_soc = np.clip(np.cumsum(battery_charge + battery_discharge) / 100, 0.2, 0.95)
+battery_soc = battery_soc + 0.5 - battery_soc[0] # Adjust to start at 50%
+battery_soc = np.clip(battery_soc, 0.2, 0.95)
+
+ev_charge = np.maximum(0, load_demand / 4 + np.random.normal(0, 5, num_hours))
+ev_discharge = np.minimum(0, -np.random.normal(0, 5, num_hours))
+ev_mean_soc = np.clip(np.cumsum(ev_charge + ev_discharge) / 50 + 0.6, 0.1, 0.9)
+ev_mean_soc = ev_mean_soc + 0.5 - ev_mean_soc[0]
+ev_mean_soc = np.clip(ev_mean_soc, 0.1, 0.9)
+
+
+grid_purchase = np.maximum(0, load_demand - pv_power - battery_discharge - ev_discharge)
+grid_sale = np.minimum(0, pv_power - load_demand - battery_charge - ev_charge)
+
+simulation_results = pd.DataFrame({
+    'pv_power': pv_power,
+    'wt_power': wt_power,
+    'load_demand': load_demand,
+    'battery_charge': battery_charge,
+    'battery_discharge': -battery_discharge, # make positive for plot
+    'ev_charge': ev_charge,
+    'ev_discharge': -ev_discharge,
+    'grid_purchase': grid_purchase,
+    'grid_sale': -grid_sale, # make positive for plot
+    'battery_soc': battery_soc,
+    'ev_mean_soc': ev_mean_soc
+}, index=time_index)
+print("Simulated energy flow data.")
+
+# 4. Simulate Monte Carlo Results
+print("Simulating Monte Carlo results...")
+num_simulations = 100
+scenarios = ['no_v2g', 'managed_v2g', 'optimized_v2g']
+monte_carlo_results = {}
+for scenario in scenarios:
+    coe = np.random.normal(0.15, 0.02, num_simulations) if scenario == 'optimized_v2g' else np.random.normal(0.2, 0.03, num_simulations)
+    lpsp = np.random.normal(0.01, 0.005, num_simulations) if scenario == 'optimized_v2g' else np.random.normal(0.05, 0.01, num_simulations)
+    ref = np.random.normal(0.8, 0.05, num_simulations) if scenario == 'optimized_v2g' else np.random.normal(0.6, 0.05, num_simulations)
+    
+    # Add some variation to total_v2g_energy for the plots
+    total_v2g_energy = np.random.normal(200, 50, num_simulations) if scenario == 'optimized_v2g' else np.zeros(num_simulations)
+    
+    monte_carlo_results[scenario] = {
+        'detailed_results': pd.DataFrame({
+            'coe': coe, 'lpsp': lpsp, 'ref': ref, 'total_v2g_energy': total_v2g_energy
+        })
+    }
+print("Simulated Monte Carlo data.")
+
+# 5. Simulate Economic Analysis Results
+print("Simulating economic analysis results...")
+economic_results = {
+    'coe': 0.145, # $/kWh
+    'lpsp': 0.005, # %
+    'ref': 0.85, # %
+    'npc': 550000, # $
+    'total_grid_cost': 5000, # $
+    'renewable_penetration': 85,
+    'cost_breakdown': {
+        'Capital': 400000,
+        'Operation & Maintenance': 100000,
+        'Grid Purchase': 50000
+    }
+}
+print("Simulated economic analysis data.")
+
+# 6. Simulate Component Sizing Results
+print("Simulating component sizing results...")
 component_sizing = {
-    'n_pv': 50,
-    'n_wt': 10,
-    'n_bt': 20,
-    'autonomy_days': 3
+    'n_pv': 500, # panels
+    'n_wt': 10,  # turbines
+    'n_bt': 12,  # battery units
+    'autonomy_days': 2.5
 }
-viz.plot_component_sizing(
-    component_sizing, 
-    show_plot=True, 
-    save_path=os.path.join(output_dir, 'component_sizing.png')
+print("Simulated component sizing data.")
+
+# 7. Simulate Sensitivity Analysis Results
+print("Simulating sensitivity analysis data...")
+parameters = ['pv_cost', 'grid_price', 'load_growth']
+sensitivity_data = []
+base_coe = 0.145
+
+for param in parameters:
+    for mult in [0.8, 0.9, 1.0, 1.1, 1.2]:
+        if param == 'pv_cost':
+            coe = base_coe * (1 + (mult - 1) * 0.25)
+        elif param == 'grid_price':
+            coe = base_coe * (1 + (mult - 1) * 0.5)
+        elif param == 'load_growth':
+            coe = base_coe * (1 + (mult - 1) * 0.3)
+        sensitivity_data.append({
+            'parameter': param,
+            'multiplier': mult,
+            'coe': coe + np.random.normal(0, 0.002)
+        })
+
+sensitivity_results = pd.DataFrame(sensitivity_data)
+print("Simulated sensitivity analysis data.")
+
+# --- Run Visualizations ---
+print("\nGenerating visualizations...")
+# Plot 1: Convergence
+vis.plot_convergence(
+    convergence_data, 
+    save_path=os.path.join(output_dir, 'convergence_plot.png'),
+    show_plot=False
 )
 
-print(f"All plots saved in '{output_dir}' ✅")
+# Plot 2: Energy Flows
+vis.plot_energy_flows(
+    simulation_results, 
+    time_range=(0, 168), 
+    save_path=os.path.join(output_dir, 'energy_flows_plot.png'),
+    show_plot=False
+)
+
+# Plot 3: Monte Carlo Results
+vis.plot_monte_carlo_results(
+    monte_carlo_results,
+    save_path=os.path.join(output_dir, 'monte_carlo_results.png'),
+    show_plot=False
+)
+
+# Plot 4: Economic Analysis
+vis.plot_economic_analysis(
+    economic_results,
+    save_path=os.path.join(output_dir, 'economic_analysis.png'),
+    show_plot=False
+)
+
+# Plot 5: Component Sizing
+vis.plot_component_sizing(
+    component_sizing,
+    save_path=os.path.join(output_dir, 'component_sizing.png'),
+    show_plot=False
+)
+
+# Plot 6: Sensitivity Analysis
+vis.plot_sensitivity_analysis(
+    sensitivity_results,
+    save_path=os.path.join(output_dir, 'sensitivity_analysis.png'),
+    show_plot=False
+)
+
+print("\nAll plots have been generated and saved to 'outputs/figures/static'.")

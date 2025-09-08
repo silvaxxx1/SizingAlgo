@@ -640,7 +640,3 @@ if __name__ == "__main__":
     print(f"Weather data shape: {weather_data.shape}")
     print(f"Load data shape: {load_data.shape}")
     
-    # Test visualizer
-    vis = Visualizer()
-    convergence_test = [100, 50, 25, 12, 8, 5, 3, 2, 1.5, 1.2, 1.0]
-    vis.plot_convergence(convergence_test, title="Test Convergence")

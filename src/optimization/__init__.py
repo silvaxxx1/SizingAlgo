@@ -4,7 +4,7 @@
 Optimization algorithms package for V2G microgrid optimization
 """
 
-from .ialo import ImprovedAntlionOptimizer
+from .ialo import IALO
 from .alo import AntlionOptimizer  
 from .pso import ParticleSwarmOptimizer
 from .csa import CuckooSearchAlgorithm

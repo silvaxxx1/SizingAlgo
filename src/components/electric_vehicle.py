@@ -194,6 +194,29 @@ class ElectricVehicle:
         self.v2g_energy = []
         self.g2v_energy = []
     
+    def set_count(self, num_vehicles: int):
+        """
+        Update number of vehicles (for optimization)
+        """
+        old_soc = self.fleet_soc.copy()
+        self.num_vehicles = num_vehicles
+        # Reset fleet SOC array with old SOC where possible
+        if len(old_soc) >= num_vehicles:
+            self.fleet_soc = old_soc[:num_vehicles]
+        else:
+            # Fill new vehicles with initial 50% SOC
+            self.fleet_soc = np.concatenate([old_soc, np.full(num_vehicles - len(old_soc), 0.5)])
+        
+        # Reset availability if already set
+        if hasattr(self, 'availability_schedule'):
+            hours = self.availability_schedule.shape[0]
+            if self.availability_schedule.shape[1] >= num_vehicles:
+                self.availability_schedule = self.availability_schedule[:, :num_vehicles]
+            else:
+                extra_columns = np.ones((hours, num_vehicles - self.availability_schedule.shape[1]))
+                self.availability_schedule = np.hstack([self.availability_schedule, extra_columns])
+
+
     def get_specifications(self) -> Dict[str, Union[float, int]]:
         return {
             'num_vehicles': self.num_vehicles,

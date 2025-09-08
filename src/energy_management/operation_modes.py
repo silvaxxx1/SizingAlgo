@@ -2,6 +2,8 @@
 # energy_management/operation_modes.py
 from enum import Enum
 from typing import Dict, Any
+import random 
+import time
 
 class OperationMode(Enum):
     """
@@ -79,3 +81,38 @@ class OperationModeManager:
         self.current_mode = mode
         self.mode_history.append(mode)
         return mode
+
+
+# =====================================================
+# Example Usage Simulation (Run directly from this file)
+# =====================================================
+if __name__ == "__main__":
+    manager = OperationModeManager()
+
+    # Simulate 10 time steps with random conditions
+    for t in range(10):
+        system_state = {
+            "renewable_power": random.uniform(0, 10),     # kW
+            "load_demand": random.uniform(2, 8),          # kW
+            "battery_soc": random.uniform(0.1, 1.0),      # 0.0 - 1.0
+            "ev_available": random.choice([True, False]),
+            "ev_soc": random.uniform(0.0, 1.0),
+            "grid_available": random.choice([True, False])
+        }
+
+        mode = manager.determine_mode(system_state)
+
+        print(f"--- Time Step {t+1} ---")
+        print(f"Renewable Power: {system_state['renewable_power']:.2f} kW")
+        print(f"Load Demand:    {system_state['load_demand']:.2f} kW")
+        print(f"Battery SOC:    {system_state['battery_soc']:.2f}")
+        print(f"EV Available:   {system_state['ev_available']} (SOC: {system_state['ev_soc']:.2f})")
+        print(f"Grid Available: {system_state['grid_available']}")
+        print(f"=> Selected Mode: {mode.value}")
+        print("-" * 40)
+        time.sleep(0.5)
+
+    # Show mode history at the end
+    print("\n=== Mode History ===")
+    for i, m in enumerate(manager.mode_history, start=1):
+        print(f"Step {i}: {m.value}")
