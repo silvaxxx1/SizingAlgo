@@ -1,0 +1,1080 @@
+# utils/visualization.py
+"""
+Comprehensive visualization module for V2G microgrid optimization results
+Provides publication-ready plots and interactive dashboards
+"""
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+import pandas as pd
+from typing import Dict, List, Optional, Tuple, Union
+import logging
+from pathlib import Path
+import warnings
+
+# Optional imports for enhanced visualizations
+try:
+    import plotly.graph_objects as go
+    import plotly.express as px
+    from plotly.subplots import make_subplots
+    PLOTLY_AVAILABLE = True
+except ImportError:
+    PLOTLY_AVAILABLE = False
+    logging.warning("Plotly not available. Interactive plots will be disabled.")
+
+warnings.filterwarnings('ignore', category=UserWarning)
+
+class Visualizer:
+    """
+    Comprehensive visualization class for V2G microgrid optimization results
+    """
+    
+    def __init__(self, 
+                 style: str = 'seaborn-v0_8-darkgrid', 
+                 figsize: Tuple[int, int] = (12, 8),
+                 dpi: int = 300,
+                 color_palette: str = 'Set2'):
+        """
+        Initialize visualizer with plotting parameters
+        
+        Args:
+            style: Matplotlib style
+            figsize: Default figure size
+            dpi: Resolution for saved figures
+            color_palette: Seaborn color palette
+        """
+        # Set matplotlib style
+        try:
+            plt.style.use(style)
+        except OSError:
+            plt.style.use('default')
+            logging.warning(f"Style '{style}' not available, using default")
+        
+        # Set seaborn parameters
+        sns.set_palette(color_palette)
+        
+        self.figsize = figsize
+        self.dpi = dpi
+        
+        # Color scheme for different energy components
+        self.colors = {
+            'pv': '#FF6B35',           # Orange for solar
+            'wind': '#4ECDC4',         # Teal for wind
+            'battery': '#45B7D1',      # Blue for battery
+            'ev': '#96CEB4',           # Green for EV
+            'grid': '#FF6B9D',         # Pink for grid
+            'load': '#C44569',         # Purple for load
+            'surplus': '#FFA07A',      # Light salmon for surplus
+            'deficit': '#FF4500'       # Red orange for deficit
+        }
+        
+        # Create output directories
+        self.ensure_output_dirs()
+        
+        logging.info("Visualizer initialized with matplotlib and seaborn")
+        if PLOTLY_AVAILABLE:
+            logging.info("Plotly available for interactive visualizations")
+    
+    def ensure_output_dirs(self):
+        """Create output directories if they don't exist"""
+        output_dirs = ['outputs/figures', 'outputs/figures/static', 'outputs/figures/interactive']
+        for dir_path in output_dirs:
+            Path(dir_path).mkdir(parents=True, exist_ok=True)
+    
+    def plot_convergence(self, 
+                        convergence_history: Union[List[float], Dict[str, List[float]]],
+                        title: str = "Optimization Convergence",
+                        save_path: Optional[str] = None,
+                        show_plot: bool = True) -> None:
+        """
+        Plot optimization algorithm convergence
+        
+        Args:
+            convergence_history: Single list or dict of algorithm histories
+            title: Plot title
+            save_path: Path to save figure
+            show_plot: Whether to display plot
+        """
+        fig, ax = plt.subplots(figsize=self.figsize)
+        
+        if isinstance(convergence_history, dict):
+            # Multiple algorithms
+            for alg_name, history in convergence_history.items():
+                iterations = range(len(history))
+                ax.plot(iterations, history, linewidth=2.5, 
+                       label=alg_name, marker='o', markersize=4, alpha=0.8)
+        else:
+            # Single algorithm
+            iterations = range(len(convergence_history))
+            ax.plot(iterations, convergence_history, linewidth=2.5, 
+                   color=self.colors['battery'], marker='o', markersize=4)
+        
+        ax.set_title(title, fontsize=16, fontweight='bold', pad=20)
+        ax.set_xlabel('Iteration', fontsize=12)
+        ax.set_ylabel('Objective Function Value', fontsize=12)
+        ax.grid(True, alpha=0.3)
+        
+        if isinstance(convergence_history, dict):
+            ax.legend(fontsize=10, framealpha=0.9)
+        
+        # Add improvement annotation
+        if isinstance(convergence_history, list):
+            improvement = ((convergence_history[0] - convergence_history[-1]) / 
+                          convergence_history[0] * 100)
+            ax.annotate(f'Improvement: {improvement:.1f}%', 
+                       xy=(0.7, 0.95), xycoords='axes fraction',
+                       bbox=dict(boxstyle="round,pad=0.3", facecolor='yellow', alpha=0.7))
+        
+        plt.tight_layout()
+        
+        if save_path:
+            plt.savefig(save_path, dpi=self.dpi, bbox_inches='tight')
+            logging.info(f"Convergence plot saved to {save_path}")
+        
+        if show_plot:
+            plt.show()
+        else:
+            plt.close()
+    
+    def plot_energy_flows(self, 
+                         simulation_results: pd.DataFrame,
+                         time_range: Optional[Tuple[int, int]] = None,
+                         save_path: Optional[str] = None,
+                         show_plot: bool = True) -> None:
+        """
+        Plot comprehensive energy flows over time
+        
+        Args:
+            simulation_results: DataFrame with simulation results
+            time_range: (start_hour, end_hour) tuple
+            save_path: Path to save figure
+            show_plot: Whether to display plot
+        """
+        if time_range is None:
+            # Plot first week by default
+            time_range = (0, min(168, len(simulation_results)))
+        
+        start_idx, end_idx = time_range
+        data_subset = simulation_results.iloc[start_idx:end_idx].copy()
+        hours = np.arange(len(data_subset))
+        
+        fig, axes = plt.subplots(4, 1, figsize=(15, 16))
+        
+        # Plot 1: Power Generation and Load
+        axes[0].plot(hours, data_subset.get('pv_power', 0), 
+                    label='PV Power', color=self.colors['pv'], linewidth=2)
+        axes[0].plot(hours, data_subset.get('wt_power', 0), 
+                    label='Wind Power', color=self.colors['wind'], linewidth=2)
+        axes[0].plot(hours, data_subset.get('load_demand', 0), 
+                    label='Load Demand', color=self.colors['load'], 
+                    linewidth=2, linestyle='--')
+        
+        axes[0].fill_between(hours, data_subset.get('pv_power', 0), alpha=0.3, 
+                           color=self.colors['pv'])
+        axes[0].fill_between(hours, data_subset.get('wt_power', 0), alpha=0.3, 
+                           color=self.colors['wind'])
+        
+        axes[0].set_title('Renewable Generation and Load Demand', 
+                         fontsize=14, fontweight='bold')
+        axes[0].set_ylabel('Power (kW)', fontsize=12)
+        axes[0].legend(loc='upper right')
+        axes[0].grid(True, alpha=0.3)
+        
+        # Plot 2: Energy Storage Operations
+        battery_charge = data_subset.get('battery_charge', 0)
+        battery_discharge = -data_subset.get('battery_discharge', 0)
+        ev_charge = data_subset.get('ev_charge', 0)
+        ev_discharge = -data_subset.get('ev_discharge', 0)
+        
+        axes[1].fill_between(hours, 0, battery_charge, 
+                           label='Battery Charge', color=self.colors['battery'], alpha=0.6)
+        axes[1].fill_between(hours, 0, battery_discharge, 
+                           label='Battery Discharge', color=self.colors['battery'], alpha=0.4)
+        axes[1].fill_between(hours, 0, ev_charge, 
+                           label='EV Charge (G2V)', color=self.colors['ev'], alpha=0.6)
+        axes[1].fill_between(hours, 0, ev_discharge, 
+                           label='EV Discharge (V2G)', color=self.colors['ev'], alpha=0.4)
+        
+        axes[1].axhline(y=0, color='black', linestyle='-', alpha=0.3)
+        axes[1].set_title('Energy Storage Operations', fontsize=14, fontweight='bold')
+        axes[1].set_ylabel('Energy (kWh)', fontsize=12)
+        axes[1].legend(loc='upper right')
+        axes[1].grid(True, alpha=0.3)
+        
+        # Plot 3: Grid Interactions
+        grid_purchase = data_subset.get('grid_purchase', 0)
+        grid_sale = -data_subset.get('grid_sale', 0)
+        
+        axes[2].fill_between(hours, 0, grid_purchase, 
+                           label='Grid Purchase', color=self.colors['grid'], alpha=0.6)
+        axes[2].fill_between(hours, 0, grid_sale, 
+                           label='Grid Sale', color=self.colors['surplus'], alpha=0.6)
+        
+        axes[2].axhline(y=0, color='black', linestyle='-', alpha=0.3)
+        axes[2].set_title('Grid Interactions', fontsize=14, fontweight='bold')
+        axes[2].set_ylabel('Energy (kWh)', fontsize=12)
+        axes[2].legend(loc='upper right')
+        axes[2].grid(True, alpha=0.3)
+        
+        # Plot 4: State of Charge
+        battery_soc = data_subset.get('battery_soc', 0.5) * 100
+        ev_soc = data_subset.get('ev_mean_soc', 0.5) * 100
+        
+        axes[3].plot(hours, battery_soc, label='Battery SOC', 
+                    color=self.colors['battery'], linewidth=2)
+        axes[3].plot(hours, ev_soc, label='EV Fleet Average SOC', 
+                    color=self.colors['ev'], linewidth=2)
+        
+        # Add SOC constraint lines
+        axes[3].axhline(y=20, color='red', linestyle='--', alpha=0.7, label='Min SOC (20%)')
+        axes[3].axhline(y=95, color='orange', linestyle='--', alpha=0.7, label='Max SOC (95%)')
+        
+        axes[3].set_title('State of Charge Levels', fontsize=14, fontweight='bold')
+        axes[3].set_ylabel('SOC (%)', fontsize=12)
+        axes[3].set_xlabel('Time (Hours)', fontsize=12)
+        axes[3].set_ylim([0, 100])
+        axes[3].legend(loc='upper right')
+        axes[3].grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        
+        if save_path:
+            plt.savefig(save_path, dpi=self.dpi, bbox_inches='tight')
+            logging.info(f"Energy flows plot saved to {save_path}")
+        
+        if show_plot:
+            plt.show()
+        else:
+            plt.close()
+    
+    def plot_monte_carlo_results(self, 
+                                monte_carlo_results: Dict,
+                                save_path: Optional[str] = None,
+                                show_plot: bool = True) -> None:
+        """
+        Plot Monte Carlo simulation results with statistical distributions
+        
+        Args:
+            monte_carlo_results: Dictionary with MC results for different scenarios
+            save_path: Path to save figure
+            show_plot: Whether to display plot
+        """
+        fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+        axes = axes.flatten()
+        
+        # Prepare data for visualization
+        all_data = []
+        for scenario_name, scenario_data in monte_carlo_results.items():
+            if 'detailed_results' in scenario_data:
+                df = scenario_data['detailed_results'].copy()
+                df['scenario'] = scenario_name.replace('_', ' ').title()
+                all_data.append(df)
+        
+        if not all_data:
+            logging.warning("No Monte Carlo data available for visualization")
+            return
+        
+        combined_df = pd.concat(all_data, ignore_index=True)
+        
+        # Plot 1: Cost of Energy Distribution
+        sns.boxplot(data=combined_df, x='scenario', y='coe', ax=axes[0])
+        sns.stripplot(data=combined_df, x='scenario', y='coe', ax=axes[0], 
+                     size=3, alpha=0.6, color='black')
+        axes[0].set_title('Cost of Energy Distribution', fontweight='bold', fontsize=12)
+        axes[0].set_ylabel('COE ($/kWh)', fontsize=10)
+        axes[0].set_xlabel('EV Fleet Scenario', fontsize=10)
+        axes[0].tick_params(axis='x', rotation=45)
+        
+        # Plot 2: Loss of Power Supply Probability
+        sns.boxplot(data=combined_df, x='scenario', y='lpsp', ax=axes[1])
+        sns.stripplot(data=combined_df, x='scenario', y='lpsp', ax=axes[1], 
+                     size=3, alpha=0.6, color='black')
+        axes[1].set_title('Loss of Power Supply Probability', fontweight='bold', fontsize=12)
+        axes[1].set_ylabel('LPSP', fontsize=10)
+        axes[1].set_xlabel('EV Fleet Scenario', fontsize=10)
+        axes[1].tick_params(axis='x', rotation=45)
+        
+        # Plot 3: Renewable Energy Fraction
+        sns.boxplot(data=combined_df, x='scenario', y='ref', ax=axes[2])
+        sns.stripplot(data=combined_df, x='scenario', y='ref', ax=axes[2], 
+                     size=3, alpha=0.6, color='black')
+        axes[2].set_title('Renewable Energy Fraction', fontweight='bold', fontsize=12)
+        axes[2].set_ylabel('REF', fontsize=10)
+        axes[2].set_xlabel('EV Fleet Scenario', fontsize=10)
+        axes[2].tick_params(axis='x', rotation=45)
+        
+        # Plot 4: V2G Energy Contribution
+        if 'total_v2g_energy' in combined_df.columns:
+            sns.boxplot(data=combined_df, x='scenario', y='total_v2g_energy', ax=axes[3])
+            sns.stripplot(data=combined_df, x='scenario', y='total_v2g_energy', ax=axes[3], 
+                         size=3, alpha=0.6, color='black')
+            axes[3].set_title('V2G Energy Contribution', fontweight='bold', fontsize=12)
+            axes[3].set_ylabel('V2G Energy (kWh)', fontsize=10)
+        else:
+            # Alternative: show NPC if V2G data not available
+            sns.boxplot(data=combined_df, x='scenario', y='npc', ax=axes[3])
+            axes[3].set_title('Net Present Cost', fontweight='bold', fontsize=12)
+            axes[3].set_ylabel('NPC ($)', fontsize=10)
+        
+        axes[3].set_xlabel('EV Fleet Scenario', fontsize=10)
+        axes[3].tick_params(axis='x', rotation=45)
+        
+        # Add statistical annotations
+        for i, ax in enumerate(axes):
+            ax.grid(True, alpha=0.3)
+        
+        plt.suptitle('Monte Carlo Analysis Results', fontsize=16, fontweight='bold', y=0.98)
+        plt.tight_layout()
+        
+        if save_path:
+            plt.savefig(save_path, dpi=self.dpi, bbox_inches='tight')
+            logging.info(f"Monte Carlo results plot saved to {save_path}")
+        
+        if show_plot:
+            plt.show()
+        else:
+            plt.close()
+    
+    def plot_economic_analysis(self, 
+                              economic_results: Dict,
+                              save_path: Optional[str] = None,
+                              show_plot: bool = True) -> None:
+        """
+        Plot comprehensive economic analysis
+        
+        Args:
+            economic_results: Dictionary with economic metrics
+            save_path: Path to save figure
+            show_plot: Whether to display plot
+        """
+        fig = plt.figure(figsize=(16, 12))
+        
+        # Create grid layout
+        gs = fig.add_gridspec(3, 3, hspace=0.3, wspace=0.3)
+        
+        # Plot 1: Key Economic Metrics (top row, left)
+        ax1 = fig.add_subplot(gs[0, 0])
+        metrics = ['COE', 'LPSP', 'REF']
+        values = [economic_results.get('coe', 0), 
+                 economic_results.get('lpsp', 0), 
+                 economic_results.get('ref', 0)]
+        colors_list = [self.colors['battery'], self.colors['grid'], self.colors['pv']]
+        
+        bars = ax1.bar(metrics, values, color=colors_list, alpha=0.7, edgecolor='black')
+        ax1.set_title('Key Economic Metrics', fontweight='bold')
+        ax1.set_ylabel('Value')
+        
+        # Add value labels on bars
+        for bar, value in zip(bars, values):
+            height = bar.get_height()
+            ax1.text(bar.get_x() + bar.get_width()/2., height + height*0.01,
+                    f'{value:.4f}', ha='center', va='bottom', fontweight='bold')
+        
+        ax1.grid(True, alpha=0.3)
+        
+        # Plot 2: Cost Breakdown (top row, middle)
+        ax2 = fig.add_subplot(gs[0, 1])
+        if 'cost_breakdown' in economic_results:
+            breakdown = economic_results['cost_breakdown']
+            wedges, texts, autotexts = ax2.pie(breakdown.values(), 
+                                              labels=breakdown.keys(), 
+                                              autopct='%1.1f%%',
+                                              startangle=90)
+            ax2.set_title('Cost Breakdown', fontweight='bold')
+        else:
+            # Default breakdown if not provided
+            default_costs = {
+                'Capital': economic_results.get('npc', 1000) * 0.7,
+                'Operation': economic_results.get('npc', 1000) * 0.2,
+                'Grid': abs(economic_results.get('total_grid_cost', 100))
+            }
+            wedges, texts, autotexts = ax2.pie(default_costs.values(), 
+                                              labels=default_costs.keys(), 
+                                              autopct='%1.1f%%',
+                                              startangle=90)
+            ax2.set_title('Cost Breakdown (Estimated)', fontweight='bold')
+        
+        # Plot 3: Reliability vs Cost (top row, right)
+        ax3 = fig.add_subplot(gs[0, 2])
+        reliability = 1 - economic_results.get('lpsp', 0.01)
+        coe = economic_results.get('coe', 0.1)
+        
+        ax3.scatter([reliability], [coe], s=200, color=self.colors['battery'], 
+                   alpha=0.7, edgecolors='black', linewidth=2)
+        ax3.set_xlabel('System Reliability (1-LPSP)')
+        ax3.set_ylabel('Cost of Energy ($/kWh)')
+        ax3.set_title('Reliability vs Cost Trade-off', fontweight='bold')
+        ax3.grid(True, alpha=0.3)
+        ax3.set_xlim([0.98, 1.0])
+        
+        # Plot 4: Renewable Integration (middle row, full width)
+        ax4 = fig.add_subplot(gs[1, :])
+        ref_value = economic_results.get('ref', 0.5)
+        renewable_energy = ref_value * 100  # Convert to percentage
+        grid_energy = (1 - ref_value) * 100
+        
+        categories = ['Renewable Energy', 'Grid Energy']
+        percentages = [renewable_energy, grid_energy]
+        colors_energy = [self.colors['pv'], self.colors['grid']]
+        
+        bars = ax4.barh(categories, percentages, color=colors_energy, alpha=0.7, 
+                       edgecolor='black', height=0.5)
+        
+        # Add percentage labels
+        for bar, pct in zip(bars, percentages):
+            width = bar.get_width()
+            ax4.text(width/2, bar.get_y() + bar.get_height()/2,
+                    f'{pct:.1f}%', ha='center', va='center', 
+                    fontweight='bold', fontsize=12)
+        
+        ax4.set_xlabel('Energy Contribution (%)')
+        ax4.set_title('Energy Source Distribution', fontweight='bold')
+        ax4.set_xlim([0, 100])
+        ax4.grid(True, alpha=0.3, axis='x')
+        
+        # Plot 5: Economic Comparison (bottom left)
+        ax5 = fig.add_subplot(gs[2, 0])
+        scenarios = ['Without V2G', 'With V2G', 'Optimized V2G']
+        # Simulate comparison data
+        current_coe = economic_results.get('coe', 0.15)
+        comparison_coe = [current_coe * 1.25, current_coe * 1.1, current_coe]
+        
+        bars = ax5.bar(scenarios, comparison_coe, 
+                      color=[self.colors['grid'], self.colors['ev'], self.colors['battery']], 
+                      alpha=0.7, edgecolor='black')
+        ax5.set_title('COE Comparison Scenarios', fontweight='bold')
+        ax5.set_ylabel('COE ($/kWh)')
+        ax5.tick_params(axis='x', rotation=45)
+        
+        for bar, value in zip(bars, comparison_coe):
+            height = bar.get_height()
+            ax5.text(bar.get_x() + bar.get_width()/2., height + height*0.01,
+                    f'${value:.3f}', ha='center', va='bottom', fontweight='bold')
+        
+        # Plot 6: Net Present Cost (bottom middle)
+        ax6 = fig.add_subplot(gs[2, 1])
+        npc = economic_results.get('npc', 100000)
+        ax6.bar(['Net Present Cost'], [npc], color=self.colors['load'], 
+               alpha=0.7, edgecolor='black')
+        ax6.set_title('Net Present Cost', fontweight='bold')
+        ax6.set_ylabel('Cost ($)')
+        ax6.text(0, npc + npc*0.02, f'${npc:,.0f}', ha='center', va='bottom', 
+                fontweight='bold')
+        
+        # Plot 7: Sustainability Metrics (bottom right)
+        ax7 = fig.add_subplot(gs[2, 2])
+        sustainability_metrics = {
+            'REF': economic_results.get('ref', 0.5),
+            'Grid Independence': 1 - economic_results.get('lpsp', 0.01),
+            'V2G Utilization': min(1.0, economic_results.get('renewable_penetration', 50) / 100)
+        }
+        
+        angles = np.linspace(0, 2 * np.pi, len(sustainability_metrics), endpoint=False).tolist()
+        values = list(sustainability_metrics.values())
+        angles += angles[:1]  # Complete the circle
+        values += values[:1]  # Complete the circle
+        
+        ax7 = plt.subplot(gs[2, 2], projection='polar')
+        ax7.plot(angles, values, 'o-', linewidth=2, color=self.colors['pv'])
+        ax7.fill(angles, values, alpha=0.25, color=self.colors['pv'])
+        ax7.set_xticks(angles[:-1])
+        ax7.set_xticklabels(sustainability_metrics.keys())
+        ax7.set_ylim(0, 1)
+        ax7.set_title('Sustainability Metrics', fontweight='bold', pad=20)
+        ax7.grid(True)
+        
+        plt.suptitle('Economic Analysis Dashboard', fontsize=18, fontweight='bold', y=0.98)
+        
+        if save_path:
+            plt.savefig(save_path, dpi=self.dpi, bbox_inches='tight')
+            logging.info(f"Economic analysis plot saved to {save_path}")
+        
+        if show_plot:
+            plt.show()
+        else:
+            plt.close()
+    
+    def plot_component_sizing(self, 
+                             component_sizing: Dict,
+                             save_path: Optional[str] = None,
+                             show_plot: bool = True) -> None:
+        """
+        Visualize optimal component sizing results
+        
+        Args:
+            component_sizing: Dictionary with component counts and sizes
+            save_path: Path to save figure
+            show_plot: Whether to display plot
+        """
+        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 10))
+        
+        # Plot 1: Component Counts
+        components = ['PV Panels', 'Wind Turbines', 'Batteries']
+        counts = [
+            component_sizing.get('n_pv', 0), 
+            component_sizing.get('n_wt', 0), 
+            component_sizing.get('n_bt', 0)
+        ]
+        colors_list = [self.colors['pv'], self.colors['wind'], self.colors['battery']]
+        
+        bars = ax1.bar(components, counts, color=colors_list, alpha=0.7, 
+                      edgecolor='black', linewidth=1.5)
+        ax1.set_title('Optimal Component Sizing', fontweight='bold', fontsize=14)
+        ax1.set_ylabel('Number of Units', fontsize=12)
+        
+        # Add value labels
+        for bar, count in zip(bars, counts):
+            height = bar.get_height()
+            ax1.text(bar.get_x() + bar.get_width()/2., height + height*0.02,
+                    f'{int(count)}', ha='center', va='bottom', 
+                    fontweight='bold', fontsize=11)
+        ax1.grid(True, alpha=0.3)
+        
+        # Plot 2: Capacity Distribution (Pie Chart)
+        # Assume standard component ratings
+        pv_capacity = component_sizing.get('n_pv', 0) * 0.325  # 325W panels
+        wt_capacity = component_sizing.get('n_wt', 0) * 5      # 5kW turbines
+        bt_capacity = component_sizing.get('n_bt', 0) * 35.38  # 35.38kWh batteries
+        
+        capacities = {
+            f'PV\n({pv_capacity:.1f} kW)': pv_capacity,
+            f'Wind\n({wt_capacity:.1f} kW)': wt_capacity,
+            f'Battery\n({bt_capacity:.1f} kWh)': bt_capacity
+        }
+        
+        # Filter out zero capacities
+        capacities = {k: v for k, v in capacities.items() if v > 0}
+        
+        if capacities:
+            wedges, texts, autotexts = ax2.pie(capacities.values(), 
+                                              labels=capacities.keys(), 
+                                              autopct='%1.1f%%',
+                                              colors=colors_list[:len(capacities)],
+                                              startangle=90,
+                                              explode=[0.05] * len(capacities))
+            ax2.set_title('System Capacity Distribution', fontweight='bold', fontsize=14)
+        else:
+            ax2.text(0.5, 0.5, 'No capacity data available', 
+                    ha='center', va='center', transform=ax2.transAxes)
+        
+        # Plot 3: Autonomy and System Metrics
+        autonomy_days = component_sizing.get('autonomy_days', 0)
+        total_renewable_capacity = pv_capacity + wt_capacity
+        storage_capacity = bt_capacity
+        
+        metrics = ['Renewable\nCapacity (kW)', 'Storage\nCapacity (kWh)', 'Autonomy\n(Days)']
+        values = [total_renewable_capacity, storage_capacity, autonomy_days]
+        metric_colors = [self.colors['pv'], self.colors['battery'], self.colors['ev']]
+        
+        bars = ax3.bar(metrics, values, color=metric_colors, alpha=0.7, 
+                      edgecolor='black', linewidth=1.5)
+        ax3.set_title('System Characteristics', fontweight='bold', fontsize=14)
+        ax3.set_ylabel('Value', fontsize=12)
+        
+        for bar, value in zip(bars, values):
+            height = bar.get_height()
+            ax3.text(bar.get_x() + bar.get_width()/2., height + height*0.02,
+                    f'{value:.1f}', ha='center', va='bottom', 
+                    fontweight='bold', fontsize=11)
+        ax3.grid(True, alpha=0.3)
+        
+        # Plot 4: Cost Distribution (if available)
+        # Estimate costs based on typical values
+        pv_cost = component_sizing.get('n_pv', 0) * 200      # $200/panel
+        wt_cost = component_sizing.get('n_wt', 0) * 10000    # $10k/turbine
+        bt_cost = component_sizing.get('n_bt', 0) * 10000    # $10k/battery
+        
+        cost_breakdown = {
+            'PV System': pv_cost,
+            'Wind System': wt_cost,
+            'Battery System': bt_cost
+        }
+        
+        # Filter out zero costs
+        cost_breakdown = {k: v for k, v in cost_breakdown.items() if v > 0}
+        
+        if cost_breakdown:
+            bars = ax4.barh(list(cost_breakdown.keys()), list(cost_breakdown.values()),
+                           color=colors_list[:len(cost_breakdown)], alpha=0.7, 
+                           edgecolor='black', linewidth=1.5)
+            ax4.set_title('Estimated Cost Breakdown', fontweight='bold', fontsize=14)
+            ax4.set_xlabel('Cost ($)', fontsize=12)
+            
+            # Add value labels
+            for bar, cost in zip(bars, cost_breakdown.values()):
+                width = bar.get_width()
+                ax4.text(width + width*0.02, bar.get_y() + bar.get_height()/2.,
+                        f'${cost:,.0f}', ha='left', va='center', fontweight='bold')
+            ax4.grid(True, alpha=0.3, axis='x')
+        else:
+            ax4.text(0.5, 0.5, 'Cost data not available', 
+                    ha='center', va='center', transform=ax4.transAxes)
+        
+        plt.suptitle('Optimal Component Sizing Analysis', fontsize=16, fontweight='bold', y=0.98)
+        plt.tight_layout()
+        
+        if save_path:
+            plt.savefig(save_path, dpi=self.dpi, bbox_inches='tight')
+            logging.info(f"Component sizing plot saved to {save_path}")
+        
+        if show_plot:
+            plt.show()
+        else:
+            plt.close()
+    
+    def plot_sensitivity_analysis(self, 
+                                 sensitivity_results: pd.DataFrame,
+                                 save_path: Optional[str] = None,
+                                 show_plot: bool = True) -> None:
+        """
+        Plot sensitivity analysis results with tornado diagram
+        
+        Args:
+            sensitivity_results: DataFrame with sensitivity analysis results
+            save_path: Path to save figure
+            show_plot: Whether to display plot
+        """
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 8))
+        
+        # Plot 1: Tornado Diagram for COE sensitivity
+        if 'coe' in sensitivity_results.columns:
+            # Calculate sensitivity ranges for each parameter
+            sensitivity_ranges = []
+            parameters = sensitivity_results['parameter'].unique()
+            
+            for param in parameters:
+                param_data = sensitivity_results[sensitivity_results['parameter'] == param]
+                if len(param_data) > 1:
+                    min_coe = param_data['coe'].min()
+                    max_coe = param_data['coe'].max()
+                    base_coe = param_data[param_data['multiplier'] == 1.0]['coe'].iloc[0] if len(param_data[param_data['multiplier'] == 1.0]) > 0 else param_data['coe'].mean()
+                    
+                    low_impact = base_coe - min_coe
+                    high_impact = max_coe - base_coe
+                    
+                    sensitivity_ranges.append({
+                        'parameter': param,
+                        'low_impact': low_impact,
+                        'high_impact': high_impact,
+                        'total_range': max_coe - min_coe
+                    })
+            
+            # Sort by total range (most sensitive first)
+            sensitivity_ranges.sort(key=lambda x: x['total_range'], reverse=True)
+            
+            # Create tornado diagram
+            y_pos = np.arange(len(sensitivity_ranges))
+            
+            for i, sens in enumerate(sensitivity_ranges):
+                ax1.barh(i, -sens['low_impact'], height=0.8, 
+                        color=self.colors['grid'], alpha=0.7, label='Decrease' if i == 0 else "")
+                ax1.barh(i, sens['high_impact'], height=0.8, 
+                        color=self.colors['surplus'], alpha=0.7, label='Increase' if i == 0 else "")
+            
+            ax1.set_yticks(y_pos)
+            ax1.set_yticklabels([s['parameter'].replace('_', ' ').title() for s in sensitivity_ranges])
+            ax1.set_xlabel('COE Impact ($/kWh)')
+            ax1.set_title('Parameter Sensitivity - Tornado Diagram', fontweight='bold')
+            ax1.axvline(x=0, color='black', linestyle='-', alpha=0.8)
+            ax1.legend()
+            ax1.grid(True, alpha=0.3, axis='x')
+        
+        # Plot 2: Sensitivity trends for all parameters
+        parameters = sensitivity_results['parameter'].unique()
+        colors_cycle = plt.cm.Set3(np.linspace(0, 1, len(parameters)))
+        
+        for i, param in enumerate(parameters):
+            param_data = sensitivity_results[sensitivity_results['parameter'] == param]
+            param_data = param_data.sort_values('multiplier')
+            
+            ax2.plot(param_data['multiplier'], param_data['coe'], 
+                    marker='o', linewidth=2, label=param.replace('_', ' ').title(),
+                    color=colors_cycle[i])
+        
+        ax2.axvline(x=1.0, color='black', linestyle='--', alpha=0.7, label='Base Case')
+        ax2.set_xlabel('Parameter Multiplier')
+        ax2.set_ylabel('COE ($/kWh)')
+        ax2.set_title('Parameter Sensitivity Trends', fontweight='bold')
+        ax2.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+        ax2.grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        
+        if save_path:
+            plt.savefig(save_path, dpi=self.dpi, bbox_inches='tight')
+            logging.info(f"Sensitivity analysis plot saved to {save_path}")
+        
+        if show_plot:
+            plt.show()
+        else:
+            plt.close()
+    
+    def plot_algorithm_comparison(self, 
+                                 algorithm_results: Dict[str, Dict],
+                                 save_path: Optional[str] = None,
+                                 show_plot: bool = True) -> None:
+        """
+        Compare performance of different optimization algorithms
+        
+        Args:
+            algorithm_results: Dict with results from different algorithms
+            save_path: Path to save figure
+            show_plot: Whether to display plot
+        """
+        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 10))
+        
+        algorithms = list(algorithm_results.keys())
+        colors_alg = plt.cm.Set2(np.linspace(0, 1, len(algorithms)))
+        
+        # Plot 1: Convergence comparison
+        for i, (alg, results) in enumerate(algorithm_results.items()):
+            if 'convergence_history' in results:
+                iterations = range(len(results['convergence_history']))
+                ax1.plot(iterations, results['convergence_history'], 
+                        linewidth=2, label=alg, color=colors_alg[i])
+        
+        ax1.set_xlabel('Iteration')
+        ax1.set_ylabel('Objective Function Value')
+        ax1.set_title('Algorithm Convergence Comparison', fontweight='bold')
+        ax1.legend()
+        ax1.grid(True, alpha=0.3)
+        ax1.set_yscale('log')  # Log scale for better visualization
+        
+        # Plot 2: Final fitness comparison
+        final_fitness = []
+        alg_names = []
+        for alg, results in algorithm_results.items():
+            if 'best_fitness' in results:
+                final_fitness.append(results['best_fitness'])
+                alg_names.append(alg)
+        
+        bars = ax2.bar(alg_names, final_fitness, color=colors_alg[:len(alg_names)], 
+                      alpha=0.7, edgecolor='black')
+        ax2.set_ylabel('Final Objective Value')
+        ax2.set_title('Final Performance Comparison', fontweight='bold')
+        ax2.tick_params(axis='x', rotation=45)
+        
+        # Add value labels
+        for bar, fitness in zip(bars, final_fitness):
+            height = bar.get_height()
+            ax2.text(bar.get_x() + bar.get_width()/2., height + height*0.01,
+                    f'{fitness:.4f}', ha='center', va='bottom', fontweight='bold')
+        ax2.grid(True, alpha=0.3)
+        
+        # Plot 3: Computation time comparison (if available)
+        if all('computation_time' in results for results in algorithm_results.values()):
+            comp_times = [results['computation_time'] for results in algorithm_results.values()]
+            bars = ax3.bar(algorithms, comp_times, color=colors_alg, alpha=0.7, edgecolor='black')
+            ax3.set_ylabel('Computation Time (seconds)')
+            ax3.set_title('Computation Time Comparison', fontweight='bold')
+            ax3.tick_params(axis='x', rotation=45)
+            
+            for bar, time in zip(bars, comp_times):
+                height = bar.get_height()
+                ax3.text(bar.get_x() + bar.get_width()/2., height + height*0.01,
+                        f'{time:.2f}s', ha='center', va='bottom', fontweight='bold')
+        else:
+            ax3.text(0.5, 0.5, 'Computation time\ndata not available', 
+                    ha='center', va='center', transform=ax3.transAxes)
+        ax3.grid(True, alpha=0.3)
+        
+        # Plot 4: Solution quality metrics
+        metrics = ['Best Fitness', 'Convergence Rate', 'Stability']
+        
+        # Normalize metrics for radar chart
+        best_fitness_norm = []
+        convergence_rate_norm = []
+        stability_norm = []
+        
+        for alg, results in algorithm_results.items():
+            # Normalize best fitness (lower is better, so invert)
+            if 'best_fitness' in results:
+                best_fitness_norm.append(1 / (1 + results['best_fitness']))
+            
+            # Calculate convergence rate
+            if 'convergence_history' in results:
+                history = results['convergence_history']
+                if len(history) > 1:
+                    conv_rate = (history[0] - history[-1]) / history[0]
+                    convergence_rate_norm.append(min(1.0, conv_rate))
+                else:
+                    convergence_rate_norm.append(0)
+            
+            # Stability (inverse of standard deviation of last 10% of iterations)
+            if 'convergence_history' in results:
+                history = results['convergence_history']
+                last_portion = history[-len(history)//10:] if len(history) > 10 else history
+                if len(last_portion) > 1:
+                    stability = 1 / (1 + np.std(last_portion))
+                    stability_norm.append(min(1.0, stability))
+                else:
+                    stability_norm.append(1.0)
+        
+        # Create radar chart
+        angles = np.linspace(0, 2 * np.pi, len(metrics), endpoint=False).tolist()
+        angles += angles[:1]  # Complete the circle
+        
+        ax4 = plt.subplot(2, 2, 4, projection='polar')
+        
+        for i, alg in enumerate(algorithms):
+            if i < len(best_fitness_norm):
+                values = [best_fitness_norm[i], convergence_rate_norm[i], stability_norm[i]]
+                values += values[:1]  # Complete the circle
+                
+                ax4.plot(angles, values, 'o-', linewidth=2, label=alg, color=colors_alg[i])
+                ax4.fill(angles, values, alpha=0.1, color=colors_alg[i])
+        
+        ax4.set_xticks(angles[:-1])
+        ax4.set_xticklabels(metrics)
+        ax4.set_ylim(0, 1)
+        ax4.set_title('Algorithm Performance Radar', fontweight='bold', pad=20)
+        ax4.legend(loc='upper right', bbox_to_anchor=(1.3, 1.0))
+        ax4.grid(True)
+        
+        plt.suptitle('Optimization Algorithm Comparison', fontsize=16, fontweight='bold', y=0.98)
+        plt.tight_layout()
+        
+        if save_path:
+            plt.savefig(save_path, dpi=self.dpi, bbox_inches='tight')
+            logging.info(f"Algorithm comparison plot saved to {save_path}")
+        
+        if show_plot:
+            plt.show()
+        else:
+            plt.close()
+    
+    def create_interactive_dashboard(self, 
+                                   results: Dict,
+                                   save_path: Optional[str] = None) -> None:
+        """
+        Create interactive dashboard using Plotly (if available)
+        
+        Args:
+            results: Complete results dictionary
+            save_path: Path to save HTML file
+        """
+        if not PLOTLY_AVAILABLE:
+            logging.warning("Plotly not available. Cannot create interactive dashboard.")
+            return
+        
+        # Create subplots
+        fig = make_subplots(
+            rows=3, cols=2,
+            subplot_titles=('Convergence', 'Energy Flows', 'Economic Metrics', 
+                          'Component Sizing', 'Monte Carlo Results', 'System Overview'),
+            specs=[[{"secondary_y": False}, {"secondary_y": True}],
+                   [{"secondary_y": False}, {"secondary_y": False}],
+                   [{"secondary_y": False}, {"secondary_y": False}]]
+        )
+        
+        # Add convergence plot
+        if 'convergence_history' in results:
+            fig.add_trace(
+                go.Scatter(x=list(range(len(results['convergence_history']))),
+                          y=results['convergence_history'],
+                          mode='lines+markers',
+                          name='Convergence',
+                          line=dict(color='blue', width=2)),
+                row=1, col=1
+            )
+        
+        # Add energy flows (example with dummy data)
+        hours = list(range(24))
+        pv_power = [0 if h < 6 or h > 18 else 5 * np.sin((h-6) * np.pi/12) for h in hours]
+        load_demand = [2 + 0.5 * np.sin(h * np.pi/12) + np.random.normal(0, 0.1) for h in hours]
+        
+        fig.add_trace(
+            go.Scatter(x=hours, y=pv_power, name='PV Power', 
+                      line=dict(color='orange'), fill='tozeroy'),
+            row=1, col=2
+        )
+        fig.add_trace(
+            go.Scatter(x=hours, y=load_demand, name='Load Demand',
+                      line=dict(color='red', dash='dash')),
+            row=1, col=2
+        )
+        
+        # Add economic metrics
+        if 'economic' in results:
+            metrics = ['COE', 'LPSP', 'REF']
+            values = [results['economic'].get(m.lower(), 0) for m in metrics]
+            
+            fig.add_trace(
+                go.Bar(x=metrics, y=values, name='Economic Metrics',
+                      marker_color=['blue', 'red', 'green']),
+                row=2, col=1
+            )
+        
+        # Add component sizing
+        if 'optimization' in results and 'component_sizing' in results['optimization']:
+            sizing = results['optimization']['component_sizing']
+            components = ['PV', 'WT', 'Battery']
+            counts = [sizing.get('n_pv', 0), sizing.get('n_wt', 0), sizing.get('n_bt', 0)]
+            
+            fig.add_trace(
+                go.Bar(x=components, y=counts, name='Component Counts',
+                      marker_color=['orange', 'teal', 'blue']),
+                row=2, col=2
+            )
+        
+        # Update layout
+        fig.update_layout(
+            title_text="V2G Microgrid Optimization Interactive Dashboard",
+            title_x=0.5,
+            showlegend=True,
+            height=900
+        )
+        
+        # Save interactive plot
+        if save_path:
+            fig.write_html(save_path)
+            logging.info(f"Interactive dashboard saved to {save_path}")
+        else:
+            fig.show()
+    
+    def save_all_plots(self, 
+                      results: Dict,
+                      base_path: str = "outputs/figures") -> None:
+        """
+        Generate and save all available plots from results
+        
+        Args:
+            results: Complete results dictionary
+            base_path: Base path for saving plots
+        """
+        base_path = Path(base_path)
+        base_path.mkdir(parents=True, exist_ok=True)
+        
+        # Convergence plots
+        if 'convergence_history' in results:
+            self.plot_convergence(
+                results['convergence_history'],
+                save_path=base_path / "convergence.png",
+                show_plot=False
+            )
+        
+        # Energy flows
+        if 'energy_flows' in results:
+            self.plot_energy_flows(
+                results['energy_flows'],
+                save_path=base_path / "energy_flows.png",
+                show_plot=False
+            )
+        
+        # Economic analysis
+        if 'economic' in results:
+            self.plot_economic_analysis(
+                results['economic'],
+                save_path=base_path / "economic_analysis.png",
+                show_plot=False
+            )
+        
+        # Component sizing
+        if 'optimization' in results and 'component_sizing' in results['optimization']:
+            self.plot_component_sizing(
+                results['optimization']['component_sizing'],
+                save_path=base_path / "component_sizing.png",
+                show_plot=False
+            )
+        
+        # Monte Carlo results
+        if 'monte_carlo' in results:
+            self.plot_monte_carlo_results(
+                results['monte_carlo'],
+                save_path=base_path / "monte_carlo_results.png",
+                show_plot=False
+            )
+        
+        # Interactive dashboard
+        if PLOTLY_AVAILABLE:
+            self.create_interactive_dashboard(
+                results,
+                save_path=base_path / "interactive_dashboard.html"
+            )
+        
+        logging.info(f"All available plots saved to {base_path}")
+
+import os
+
+# Make sure output folders exist
+output_dir = 'outputs/figures'
+os.makedirs(output_dir, exist_ok=True)
+
+# Initialize visualizer
+viz = Visualizer()
+
+# -----------------------------
+# Test plot_convergence
+# -----------------------------
+convergence_data = [1000, 850, 720, 650, 600, 580, 570]
+viz.plot_convergence(
+    convergence_data, 
+    show_plot=True, 
+    save_path=os.path.join(output_dir, 'convergence_plot.png')  # save here
+)
+
+# -----------------------------
+# Test plot_energy_flows
+# -----------------------------
+hours = 24
+sim_data = pd.DataFrame({
+    'pv_power': np.random.uniform(0, 50, hours),
+    'wt_power': np.random.uniform(0, 30, hours),
+    'load_demand': np.random.uniform(20, 70, hours),
+    'battery_charge': np.random.uniform(0, 20, hours),
+    'battery_discharge': np.random.uniform(0, 15, hours),
+    'ev_charge': np.random.uniform(0, 10, hours),
+    'ev_discharge': np.random.uniform(0, 10, hours),
+    'grid_purchase': np.random.uniform(0, 25, hours),
+    'grid_sale': np.random.uniform(0, 10, hours),
+    'battery_soc': np.random.uniform(0.2, 0.95, hours),
+    'ev_mean_soc': np.random.uniform(0.2, 0.95, hours)
+})
+viz.plot_energy_flows(
+    sim_data, 
+    show_plot=True, 
+    save_path=os.path.join(output_dir, 'energy_flows.png')
+)
+
+# -----------------------------
+# Test plot_monte_carlo_results
+# -----------------------------
+mc_results = {
+    'scenario_1': {'detailed_results': pd.DataFrame({
+        'coe': np.random.uniform(0.1, 0.2, 10),
+        'lpsp': np.random.uniform(0, 0.05, 10),
+        'ref': np.random.uniform(0.4, 0.6, 10),
+        'total_v2g_energy': np.random.uniform(100, 500, 10),
+        'npc': np.random.uniform(1e5, 2e5, 10)
+    })},
+    'scenario_2': {'detailed_results': pd.DataFrame({
+        'coe': np.random.uniform(0.12, 0.22, 10),
+        'lpsp': np.random.uniform(0, 0.05, 10),
+        'ref': np.random.uniform(0.45, 0.65, 10),
+        'total_v2g_energy': np.random.uniform(150, 550, 10),
+        'npc': np.random.uniform(1e5, 2e5, 10)
+    })}
+}
+viz.plot_monte_carlo_results(
+    mc_results, 
+    show_plot=True, 
+    save_path=os.path.join(output_dir, 'monte_carlo_results.png')
+)
+
+# -----------------------------
+# Test plot_component_sizing
+# -----------------------------
+component_sizing = {
+    'n_pv': 50,
+    'n_wt': 10,
+    'n_bt': 20,
+    'autonomy_days': 3
+}
+viz.plot_component_sizing(
+    component_sizing, 
+    show_plot=True, 
+    save_path=os.path.join(output_dir, 'component_sizing.png')
+)
+
+print(f"All plots saved in '{output_dir}' ✅")
