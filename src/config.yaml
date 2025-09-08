@@ -59,7 +59,7 @@ optimization:
   algorithms: ["IALO", "ALO", "PSO", "CSA"]
   default_algorithm: "IALO"
   population_size: 30
-  max_iterations: 50
+  max_iterations: 10
   ialo:
     alpha: 0.01
     beta: 1.5

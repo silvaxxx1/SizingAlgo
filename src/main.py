@@ -125,6 +125,10 @@ def calculate_objectives(solution, data, components, config):
 
 # -------------------- Optimization -------------------- #
 def run_optimization(config, data, components, algorithm='IALO'):
+    import numpy as np
+    import logging
+
+    # -------------------- Bounds Setup -------------------- #
     lower_bounds = [
         config['bounds']['n_pv'][0],
         config['bounds']['n_wt'][0],
@@ -140,58 +144,67 @@ def run_optimization(config, data, components, algorithm='IALO'):
     dim = 4
     bounds_tuple = (np.array(lower_bounds), np.array(upper_bounds))
 
+    # -------------------- Objective Function -------------------- #
     def objective_function(solution):
         coe, lpsp, ref = calculate_objectives(solution, data, components, config)
         w = 0.5
         gamma = 1000
         pf = 1.0
         fitness = w * coe + (1 - w) * gamma * pf * lpsp - w * ref
-        
+
+        # Apply penalties for constraint violations
         if lpsp > config['constraints']['lpsp_max']:
             fitness += 1000
         if ref < config['constraints']['ref_min']:
             fitness += 1000
         return fitness
 
+    # -------------------- Select Optimizer -------------------- #
     opt_config = config['optimization']
+
     if algorithm == 'IALO':
         optimizer = IALO(
             obj_func=objective_function,
             dim=dim,
-            bounds=bounds_tuple,
+            bounds=bounds_tuple,  # Single tuple (lower, upper)
             population_size=opt_config['population_size'],
             max_iter=opt_config['max_iterations']
         )
+
     elif algorithm == 'ALO':
+        # ALO expects a list of tuples [(lb, ub), ...] for each dimension
         optimizer = AntlionOptimizer(
             objective_function=objective_function,
-            dim=dim,
-            bounds=bounds_tuple,
+            bounds=[(lb, ub) for lb, ub in zip(lower_bounds, upper_bounds)],
             population_size=opt_config['population_size'],
             max_iterations=opt_config['max_iterations']
         )
+
     elif algorithm == 'PSO':
+        # PSO expects a list of tuples and uses swarm_size
         optimizer = ParticleSwarmOptimizer(
             objective_function=objective_function,
-            dim=dim,
-            bounds=bounds_tuple,
+            bounds=[(lb, ub) for lb, ub in zip(lower_bounds, upper_bounds)],
             swarm_size=opt_config['population_size'],
             max_iterations=opt_config['max_iterations']
         )
+
     elif algorithm == 'CSA':
+        # CSA expects a list of tuples [(lb, ub), ...]
         optimizer = CuckooSearchAlgorithm(
             objective_function=objective_function,
-            dim=dim,
-            bounds=bounds_tuple,
+            bounds=[(lb, ub) for lb, ub in zip(lower_bounds, upper_bounds)],
             population_size=opt_config['population_size'],
             max_iterations=opt_config['max_iterations']
         )
+
     else:
         raise ValueError(f"Unknown algorithm: {algorithm}")
 
+    # -------------------- Run Optimization -------------------- #
     logging.info(f"Running optimization with {algorithm}")
     best_solution, best_fitness, convergence_history = optimizer.optimize()
-    
+
     return best_solution, best_fitness, convergence_history
 
 # -------------------- Monte Carlo -------------------- #
