@@ -124,7 +124,8 @@ class MonteCarloSimulation:
             components['ev'].availability_schedule = availability
             
             # Run simulation with current EV configuration
-            from ..energy_management.rule_based_ems import RuleBasedEMS
+            from energy_management.rule_based_ems import RuleBasedEMS
+            
             ems = RuleBasedEMS(components)
             
             # Simulate shorter period for Monte Carlo (e.g., one week)
@@ -132,7 +133,8 @@ class MonteCarloSimulation:
             weather_subset = data['weather'].iloc[:sim_hours]
             load_subset = data['load'].iloc[:sim_hours]
             
-            sim_result = ems.simulate_year(weather_subset, load_subset)
+            sim_data = {"weather": weather_subset, "load": load_subset}
+            sim_result = ems.simulate_year(sim_data, hours=sim_hours)
             
             # Calculate metrics for this simulation
             from . import EconomicAnalysis

@@ -101,14 +101,16 @@ class Visualizer:
         if isinstance(convergence_history, dict):
             # Multiple algorithms
             for alg_name, history in convergence_history.items():
-                iterations = range(len(history))
-                ax.plot(iterations, history, linewidth=2.5, 
-                       label=alg_name, marker='o', markersize=4, alpha=0.8)
+                if history and len(history) > 0:  # FIXED: Check if history exists and not empty
+                    iterations = range(len(history))
+                    ax.plot(iterations, history, linewidth=2.5, 
+                           label=alg_name, marker='o', markersize=4, alpha=0.8)
         else:
             # Single algorithm
-            iterations = range(len(convergence_history))
-            ax.plot(iterations, convergence_history, linewidth=2.5, 
-                   color=self.colors['battery'], marker='o', markersize=4)
+            if convergence_history and len(convergence_history) > 0:  # FIXED: Check if history exists
+                iterations = range(len(convergence_history))
+                ax.plot(iterations, convergence_history, linewidth=2.5, 
+                       color=self.colors['battery'], marker='o', markersize=4)
         
         ax.set_title(title, fontsize=16, fontweight='bold', pad=20)
         ax.set_xlabel('Iteration', fontsize=12)
@@ -119,7 +121,7 @@ class Visualizer:
             ax.legend(fontsize=10, framealpha=0.9)
         
         # Add improvement annotation
-        if isinstance(convergence_history, list):
+        if isinstance(convergence_history, list) and len(convergence_history) > 1:  # FIXED
             improvement = ((convergence_history[0] - convergence_history[-1]) / 
                           convergence_history[0] * 100)
             ax.annotate(f'Improvement: {improvement:.1f}%', 
@@ -138,7 +140,7 @@ class Visualizer:
             plt.close()
     
     def plot_energy_flows(self, 
-                         simulation_results: pd.DataFrame,
+                         simulation_results: Union[pd.DataFrame, Dict],
                          time_range: Optional[Tuple[int, int]] = None,
                          save_path: Optional[str] = None,
                          show_plot: bool = True) -> None:
@@ -146,34 +148,57 @@ class Visualizer:
         Plot comprehensive energy flows over time
         
         Args:
-            simulation_results: DataFrame with simulation results
+            simulation_results: DataFrame or Dict with simulation results
             time_range: (start_hour, end_hour) tuple
             save_path: Path to save figure
             show_plot: Whether to display plot
         """
+        # FIXED: Handle both DataFrame and Dict inputs with proper validation
+        if isinstance(simulation_results, dict):
+            # Convert dict to DataFrame if needed
+            if simulation_results:  # Check if dict is not empty
+                try:
+                    data_df = pd.DataFrame(simulation_results)
+                except Exception as e:
+                    logging.error(f"Could not convert simulation_results dict to DataFrame: {e}")
+                    return
+            else:
+                logging.warning("Empty simulation results provided")
+                return
+        elif isinstance(simulation_results, pd.DataFrame):
+            if not simulation_results.empty:  # FIXED: Use .empty instead of direct boolean check
+                data_df = simulation_results.copy()
+            else:
+                logging.warning("Empty DataFrame provided")
+                return
+        else:
+            logging.error("simulation_results must be DataFrame or Dict")
+            return
+        
         if time_range is None:
             # Plot first week by default
-            time_range = (0, min(168, len(simulation_results)))
+            time_range = (0, min(168, len(data_df)))
         
         start_idx, end_idx = time_range
-        data_subset = simulation_results.iloc[start_idx:end_idx].copy()
+        data_subset = data_df.iloc[start_idx:end_idx].copy()
         hours = np.arange(len(data_subset))
         
         fig, axes = plt.subplots(4, 1, figsize=(15, 16))
         
         # Plot 1: Power Generation and Load
-        axes[0].plot(hours, data_subset.get('pv_power', 0), 
+        axes[0].plot(hours, data_subset.get('pv_power', pd.Series([0]*len(data_subset))), 
                     label='PV Power', color=self.colors['pv'], linewidth=2)
-        axes[0].plot(hours, data_subset.get('wt_power', 0), 
+        axes[0].plot(hours, data_subset.get('wt_power', pd.Series([0]*len(data_subset))), 
                     label='Wind Power', color=self.colors['wind'], linewidth=2)
-        axes[0].plot(hours, data_subset.get('load_demand', 0), 
+        axes[0].plot(hours, data_subset.get('load_demand', pd.Series([0]*len(data_subset))), 
                     label='Load Demand', color=self.colors['load'], 
                     linewidth=2, linestyle='--')
         
-        axes[0].fill_between(hours, data_subset.get('pv_power', 0), alpha=0.3, 
-                           color=self.colors['pv'])
-        axes[0].fill_between(hours, data_subset.get('wt_power', 0), alpha=0.3, 
-                           color=self.colors['wind'])
+        pv_values = data_subset.get('pv_power', pd.Series([0]*len(data_subset)))
+        wt_values = data_subset.get('wt_power', pd.Series([0]*len(data_subset)))
+        
+        axes[0].fill_between(hours, pv_values, alpha=0.3, color=self.colors['pv'])
+        axes[0].fill_between(hours, wt_values, alpha=0.3, color=self.colors['wind'])
         
         axes[0].set_title('Renewable Generation and Load Demand', 
                          fontsize=14, fontweight='bold')
@@ -182,10 +207,10 @@ class Visualizer:
         axes[0].grid(True, alpha=0.3)
         
         # Plot 2: Energy Storage Operations
-        battery_charge = data_subset.get('battery_charge', 0)
-        battery_discharge = -data_subset.get('battery_discharge', 0)
-        ev_charge = data_subset.get('ev_charge', 0)
-        ev_discharge = -data_subset.get('ev_discharge', 0)
+        battery_charge = data_subset.get('battery_charge', pd.Series([0]*len(data_subset)))
+        battery_discharge = -data_subset.get('battery_discharge', pd.Series([0]*len(data_subset)))
+        ev_charge = data_subset.get('ev_charge', pd.Series([0]*len(data_subset)))
+        ev_discharge = -data_subset.get('ev_discharge', pd.Series([0]*len(data_subset)))
         
         axes[1].fill_between(hours, 0, battery_charge, 
                            label='Battery Charge', color=self.colors['battery'], alpha=0.6)
@@ -203,8 +228,8 @@ class Visualizer:
         axes[1].grid(True, alpha=0.3)
         
         # Plot 3: Grid Interactions
-        grid_purchase = data_subset.get('grid_purchase', 0)
-        grid_sale = -data_subset.get('grid_sale', 0)
+        grid_purchase = data_subset.get('grid_purchase', pd.Series([0]*len(data_subset)))
+        grid_sale = -data_subset.get('grid_sale', pd.Series([0]*len(data_subset)))
         
         axes[2].fill_between(hours, 0, grid_purchase, 
                            label='Grid Purchase', color=self.colors['grid'], alpha=0.6)
@@ -218,8 +243,8 @@ class Visualizer:
         axes[2].grid(True, alpha=0.3)
         
         # Plot 4: State of Charge
-        battery_soc = data_subset.get('battery_soc', 0.5) * 100
-        ev_soc = data_subset.get('ev_mean_soc', 0.5) * 100
+        battery_soc = data_subset.get('battery_soc', pd.Series([0.5]*len(data_subset))) * 100
+        ev_soc = data_subset.get('ev_mean_soc', pd.Series([0.5]*len(data_subset))) * 100
         
         axes[3].plot(hours, battery_soc, label='Battery SOC', 
                     color=self.colors['battery'], linewidth=2)
@@ -260,49 +285,59 @@ class Visualizer:
             save_path: Path to save figure
             show_plot: Whether to display plot
         """
+        # FIXED: Proper validation of monte_carlo_results
+        if not monte_carlo_results:  # Check if dict is empty
+            logging.warning("No Monte Carlo data available for visualization")
+            return
+        
         fig, axes = plt.subplots(2, 2, figsize=(15, 12))
         axes = axes.flatten()
         
         # Prepare data for visualization
         all_data = []
         for scenario_name, scenario_data in monte_carlo_results.items():
-            if 'detailed_results' in scenario_data:
-                df = scenario_data['detailed_results'].copy()
-                df['scenario'] = scenario_name.replace('_', ' ').title()
-                all_data.append(df)
+            if scenario_data and 'detailed_results' in scenario_data:  # FIXED: Check if scenario_data exists
+                df = scenario_data['detailed_results']
+                if isinstance(df, pd.DataFrame) and not df.empty:  # FIXED: Use .empty
+                    df_copy = df.copy()
+                    df_copy['scenario'] = scenario_name.replace('_', ' ').title()
+                    all_data.append(df_copy)
         
-        if not all_data:
-            logging.warning("No Monte Carlo data available for visualization")
+        if not all_data:  # FIXED: Check if list is empty
+            logging.warning("No valid Monte Carlo data found for visualization")
             return
         
         combined_df = pd.concat(all_data, ignore_index=True)
         
         # Plot 1: Cost of Energy Distribution
-        sns.boxplot(data=combined_df, x='scenario', y='coe', ax=axes[0])
-        sns.stripplot(data=combined_df, x='scenario', y='coe', ax=axes[0], 
-                     size=3, alpha=0.6, color='black')
-        axes[0].set_title('Cost of Energy Distribution', fontweight='bold', fontsize=12)
-        axes[0].set_ylabel('COE ($/kWh)', fontsize=10)
-        axes[0].set_xlabel('EV Fleet Scenario', fontsize=10)
-        axes[0].tick_params(axis='x', rotation=45)
+        if 'coe' in combined_df.columns:  # FIXED: Check if column exists
+            sns.boxplot(data=combined_df, x='scenario', y='coe', ax=axes[0])
+            sns.stripplot(data=combined_df, x='scenario', y='coe', ax=axes[0], 
+                         size=3, alpha=0.6, color='black')
+            axes[0].set_title('Cost of Energy Distribution', fontweight='bold', fontsize=12)
+            axes[0].set_ylabel('COE ($/kWh)', fontsize=10)
+            axes[0].set_xlabel('EV Fleet Scenario', fontsize=10)
+            axes[0].tick_params(axis='x', rotation=45)
         
         # Plot 2: Loss of Power Supply Probability
-        sns.boxplot(data=combined_df, x='scenario', y='lpsp', ax=axes[1])
-        sns.stripplot(data=combined_df, x='scenario', y='lpsp', ax=axes[1], 
-                     size=3, alpha=0.6, color='black')
-        axes[1].set_title('Loss of Power Supply Probability', fontweight='bold', fontsize=12)
-        axes[1].set_ylabel('LPSP', fontsize=10)
-        axes[1].set_xlabel('EV Fleet Scenario', fontsize=10)
-        axes[1].tick_params(axis='x', rotation=45)
+        if 'lpsp' in combined_df.columns:  # FIXED: Check if column exists
+            sns.boxplot(data=combined_df, x='scenario', y='lpsp', ax=axes[1])
+            sns.stripplot(data=combined_df, x='scenario', y='lpsp', ax=axes[1], 
+                         size=3, alpha=0.6, color='black')
+            axes[1].set_title('Loss of Power Supply Probability', fontweight='bold', fontsize=12)
+            axes[1].set_ylabel('LPSP', fontsize=10)
+            axes[1].set_xlabel('EV Fleet Scenario', fontsize=10)
+            axes[1].tick_params(axis='x', rotation=45)
         
         # Plot 3: Renewable Energy Fraction
-        sns.boxplot(data=combined_df, x='scenario', y='ref', ax=axes[2])
-        sns.stripplot(data=combined_df, x='scenario', y='ref', ax=axes[2], 
-                     size=3, alpha=0.6, color='black')
-        axes[2].set_title('Renewable Energy Fraction', fontweight='bold', fontsize=12)
-        axes[2].set_ylabel('REF', fontsize=10)
-        axes[2].set_xlabel('EV Fleet Scenario', fontsize=10)
-        axes[2].tick_params(axis='x', rotation=45)
+        if 'ref' in combined_df.columns:  # FIXED: Check if column exists
+            sns.boxplot(data=combined_df, x='scenario', y='ref', ax=axes[2])
+            sns.stripplot(data=combined_df, x='scenario', y='ref', ax=axes[2], 
+                         size=3, alpha=0.6, color='black')
+            axes[2].set_title('Renewable Energy Fraction', fontweight='bold', fontsize=12)
+            axes[2].set_ylabel('REF', fontsize=10)
+            axes[2].set_xlabel('EV Fleet Scenario', fontsize=10)
+            axes[2].tick_params(axis='x', rotation=45)
         
         # Plot 4: V2G Energy Contribution
         if 'total_v2g_energy' in combined_df.columns:
@@ -313,9 +348,10 @@ class Visualizer:
             axes[3].set_ylabel('V2G Energy (kWh)', fontsize=10)
         else:
             # Alternative: show NPC if V2G data not available
-            sns.boxplot(data=combined_df, x='scenario', y='npc', ax=axes[3])
-            axes[3].set_title('Net Present Cost', fontweight='bold', fontsize=12)
-            axes[3].set_ylabel('NPC ($)', fontsize=10)
+            if 'npc' in combined_df.columns:
+                sns.boxplot(data=combined_df, x='scenario', y='npc', ax=axes[3])
+                axes[3].set_title('Net Present Cost', fontweight='bold', fontsize=12)
+                axes[3].set_ylabel('NPC ($)', fontsize=10)
         
         axes[3].set_xlabel('EV Fleet Scenario', fontsize=10)
         axes[3].tick_params(axis='x', rotation=45)
@@ -348,6 +384,11 @@ class Visualizer:
             save_path: Path to save figure
             show_plot: Whether to display plot
         """
+        # FIXED: Check if economic_results is not empty
+        if not economic_results:
+            logging.warning("No economic data available for visualization")
+            return
+        
         fig = plt.figure(figsize=(16, 12))
         
         # Create grid layout
@@ -375,7 +416,7 @@ class Visualizer:
         
         # Plot 2: Cost Breakdown (top row, middle)
         ax2 = fig.add_subplot(gs[0, 1])
-        if 'cost_breakdown' in economic_results:
+        if 'cost_breakdown' in economic_results and economic_results['cost_breakdown']:  # FIXED
             breakdown = economic_results['cost_breakdown']
             wedges, texts, autotexts = ax2.pie(breakdown.values(), 
                                               labels=breakdown.keys(), 
@@ -507,6 +548,11 @@ class Visualizer:
             save_path: Path to save figure
             show_plot: Whether to display plot
         """
+        # FIXED: Check if component_sizing is not empty
+        if not component_sizing:
+            logging.warning("No component sizing data available for visualization")
+            return
+        
         fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 10))
         
         # Plot 1: Component Counts
@@ -546,7 +592,7 @@ class Visualizer:
         # Filter out zero capacities
         capacities = {k: v for k, v in capacities.items() if v > 0}
         
-        if capacities:
+        if capacities:  # FIXED: Check if capacities dict is not empty
             wedges, texts, autotexts = ax2.pie(capacities.values(), 
                                               labels=capacities.keys(), 
                                               autopct='%1.1f%%',
@@ -594,7 +640,7 @@ class Visualizer:
         # Filter out zero costs
         cost_breakdown = {k: v for k, v in cost_breakdown.items() if v > 0}
         
-        if cost_breakdown:
+        if cost_breakdown:  # FIXED: Check if cost_breakdown dict is not empty
             bars = ax4.barh(list(cost_breakdown.keys()), list(cost_breakdown.values()),
                            color=colors_list[:len(cost_breakdown)], alpha=0.7, 
                            edgecolor='black', linewidth=1.5)
@@ -635,6 +681,11 @@ class Visualizer:
             save_path: Path to save figure
             show_plot: Whether to display plot
         """
+        # FIXED: Check if sensitivity_results is valid
+        if sensitivity_results is None or sensitivity_results.empty:
+            logging.warning("No sensitivity analysis data available for visualization")
+            return
+        
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 8))
         
         # Plot 1: Tornado Diagram for COE sensitivity
@@ -648,7 +699,8 @@ class Visualizer:
                 if len(param_data) > 1:
                     min_coe = param_data['coe'].min()
                     max_coe = param_data['coe'].max()
-                    base_coe = param_data[param_data['multiplier'] == 1.0]['coe'].iloc[0] if len(param_data[param_data['multiplier'] == 1.0]) > 0 else param_data['coe'].mean()
+                    base_coe_data = param_data[param_data['multiplier'] == 1.0]['coe']
+                    base_coe = base_coe_data.iloc[0] if not base_coe_data.empty else param_data['coe'].mean()
                     
                     low_impact = base_coe - min_coe
                     high_impact = max_coe - base_coe
@@ -711,7 +763,7 @@ class Visualizer:
             plt.close()
     
     def plot_algorithm_comparison(self, 
-                                 algorithm_results: Dict[str, Dict],
+                                 algorithm_results: Dict[str, Union[Dict, List]],
                                  save_path: Optional[str] = None,
                                  show_plot: bool = True) -> None:
         """
@@ -722,6 +774,11 @@ class Visualizer:
             save_path: Path to save figure
             show_plot: Whether to display plot
         """
+        # FIXED: Check if algorithm_results is not empty
+        if not algorithm_results:
+            logging.warning("No algorithm results available for comparison")
+            return
+        
         fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 10))
         
         algorithms = list(algorithm_results.keys())
@@ -729,9 +786,17 @@ class Visualizer:
         
         # Plot 1: Convergence comparison
         for i, (alg, results) in enumerate(algorithm_results.items()):
-            if 'convergence_history' in results:
-                iterations = range(len(results['convergence_history']))
-                ax1.plot(iterations, results['convergence_history'], 
+            # FIXED: Handle both dict with convergence_history and direct list
+            if isinstance(results, dict) and 'convergence_history' in results:
+                history = results['convergence_history']
+            elif isinstance(results, list):
+                history = results
+            else:
+                continue
+                
+            if history and len(history) > 0:  # FIXED: Check if history exists and not empty
+                iterations = range(len(history))
+                ax1.plot(iterations, history, 
                         linewidth=2, label=alg, color=colors_alg[i])
         
         ax1.set_xlabel('Iteration')
@@ -745,27 +810,38 @@ class Visualizer:
         final_fitness = []
         alg_names = []
         for alg, results in algorithm_results.items():
-            if 'best_fitness' in results:
+            if isinstance(results, dict) and 'best_fitness' in results:
                 final_fitness.append(results['best_fitness'])
                 alg_names.append(alg)
+            elif isinstance(results, list) and results:  # FIXED: Check if list is not empty
+                final_fitness.append(results[-1])  # Use last value as final fitness
+                alg_names.append(alg)
         
-        bars = ax2.bar(alg_names, final_fitness, color=colors_alg[:len(alg_names)], 
-                      alpha=0.7, edgecolor='black')
-        ax2.set_ylabel('Final Objective Value')
-        ax2.set_title('Final Performance Comparison', fontweight='bold')
-        ax2.tick_params(axis='x', rotation=45)
-        
-        # Add value labels
-        for bar, fitness in zip(bars, final_fitness):
-            height = bar.get_height()
-            ax2.text(bar.get_x() + bar.get_width()/2., height + height*0.01,
-                    f'{fitness:.4f}', ha='center', va='bottom', fontweight='bold')
-        ax2.grid(True, alpha=0.3)
+        if final_fitness:  # FIXED: Check if we have data to plot
+            bars = ax2.bar(alg_names, final_fitness, color=colors_alg[:len(alg_names)], 
+                          alpha=0.7, edgecolor='black')
+            ax2.set_ylabel('Final Objective Value')
+            ax2.set_title('Final Performance Comparison', fontweight='bold')
+            ax2.tick_params(axis='x', rotation=45)
+            
+            # Add value labels
+            for bar, fitness in zip(bars, final_fitness):
+                height = bar.get_height()
+                ax2.text(bar.get_x() + bar.get_width()/2., height + height*0.01,
+                        f'{fitness:.4f}', ha='center', va='bottom', fontweight='bold')
+            ax2.grid(True, alpha=0.3)
         
         # Plot 3: Computation time comparison (if available)
-        if all('computation_time' in results for results in algorithm_results.values()):
-            comp_times = [results['computation_time'] for results in algorithm_results.values()]
-            bars = ax3.bar(algorithms, comp_times, color=colors_alg, alpha=0.7, edgecolor='black')
+        comp_times = []
+        time_alg_names = []
+        for alg, results in algorithm_results.items():
+            if isinstance(results, dict) and 'computation_time' in results:
+                comp_times.append(results['computation_time'])
+                time_alg_names.append(alg)
+        
+        if comp_times:  # FIXED: Check if we have computation time data
+            bars = ax3.bar(time_alg_names, comp_times, color=colors_alg[:len(time_alg_names)], 
+                          alpha=0.7, edgecolor='black')
             ax3.set_ylabel('Computation Time (seconds)')
             ax3.set_title('Computation Time Comparison', fontweight='bold')
             ax3.tick_params(axis='x', rotation=45)
@@ -774,10 +850,10 @@ class Visualizer:
                 height = bar.get_height()
                 ax3.text(bar.get_x() + bar.get_width()/2., height + height*0.01,
                         f'{time:.2f}s', ha='center', va='bottom', fontweight='bold')
+            ax3.grid(True, alpha=0.3)
         else:
             ax3.text(0.5, 0.5, 'Computation time\ndata not available', 
                     ha='center', va='center', transform=ax3.transAxes)
-        ax3.grid(True, alpha=0.3)
         
         # Plot 4: Solution quality metrics
         metrics = ['Best Fitness', 'Convergence Rate', 'Stability']
@@ -789,48 +865,59 @@ class Visualizer:
         
         for alg, results in algorithm_results.items():
             # Normalize best fitness (lower is better, so invert)
-            if 'best_fitness' in results:
+            if isinstance(results, dict) and 'best_fitness' in results:
                 best_fitness_norm.append(1 / (1 + results['best_fitness']))
+            elif isinstance(results, list) and results:  # FIXED
+                best_fitness_norm.append(1 / (1 + results[-1]))
+            else:
+                best_fitness_norm.append(0)
             
             # Calculate convergence rate
-            if 'convergence_history' in results:
+            if isinstance(results, dict) and 'convergence_history' in results:
                 history = results['convergence_history']
-                if len(history) > 1:
-                    conv_rate = (history[0] - history[-1]) / history[0]
-                    convergence_rate_norm.append(min(1.0, conv_rate))
-                else:
-                    convergence_rate_norm.append(0)
+            elif isinstance(results, list):
+                history = results
+            else:
+                history = []
+                
+            if history and len(history) > 1:  # FIXED
+                conv_rate = (history[0] - history[-1]) / history[0] if history[0] != 0 else 0
+                convergence_rate_norm.append(min(1.0, max(0.0, conv_rate)))
+            else:
+                convergence_rate_norm.append(0)
             
             # Stability (inverse of standard deviation of last 10% of iterations)
-            if 'convergence_history' in results:
-                history = results['convergence_history']
+            if history and len(history) > 1:  # FIXED
                 last_portion = history[-len(history)//10:] if len(history) > 10 else history
                 if len(last_portion) > 1:
                     stability = 1 / (1 + np.std(last_portion))
                     stability_norm.append(min(1.0, stability))
                 else:
                     stability_norm.append(1.0)
+            else:
+                stability_norm.append(0.0)
         
         # Create radar chart
-        angles = np.linspace(0, 2 * np.pi, len(metrics), endpoint=False).tolist()
-        angles += angles[:1]  # Complete the circle
-        
-        ax4 = plt.subplot(2, 2, 4, projection='polar')
-        
-        for i, alg in enumerate(algorithms):
-            if i < len(best_fitness_norm):
-                values = [best_fitness_norm[i], convergence_rate_norm[i], stability_norm[i]]
-                values += values[:1]  # Complete the circle
-                
-                ax4.plot(angles, values, 'o-', linewidth=2, label=alg, color=colors_alg[i])
-                ax4.fill(angles, values, alpha=0.1, color=colors_alg[i])
-        
-        ax4.set_xticks(angles[:-1])
-        ax4.set_xticklabels(metrics)
-        ax4.set_ylim(0, 1)
-        ax4.set_title('Algorithm Performance Radar', fontweight='bold', pad=20)
-        ax4.legend(loc='upper right', bbox_to_anchor=(1.3, 1.0))
-        ax4.grid(True)
+        if best_fitness_norm:  # FIXED: Check if we have data
+            angles = np.linspace(0, 2 * np.pi, len(metrics), endpoint=False).tolist()
+            angles += angles[:1]  # Complete the circle
+            
+            ax4 = plt.subplot(2, 2, 4, projection='polar')
+            
+            for i, alg in enumerate(algorithms):
+                if i < len(best_fitness_norm):
+                    values = [best_fitness_norm[i], convergence_rate_norm[i], stability_norm[i]]
+                    values += values[:1]  # Complete the circle
+                    
+                    ax4.plot(angles, values, 'o-', linewidth=2, label=alg, color=colors_alg[i])
+                    ax4.fill(angles, values, alpha=0.1, color=colors_alg[i])
+            
+            ax4.set_xticks(angles[:-1])
+            ax4.set_xticklabels(metrics)
+            ax4.set_ylim(0, 1)
+            ax4.set_title('Algorithm Performance Radar', fontweight='bold', pad=20)
+            ax4.legend(loc='upper right', bbox_to_anchor=(1.3, 1.0))
+            ax4.grid(True)
         
         plt.suptitle('Optimization Algorithm Comparison', fontsize=16, fontweight='bold', y=0.98)
         plt.tight_layout()
@@ -858,6 +945,11 @@ class Visualizer:
             logging.warning("Plotly not available. Cannot create interactive dashboard.")
             return
         
+        # FIXED: Check if results is not empty
+        if not results:
+            logging.warning("No results data available for interactive dashboard")
+            return
+        
         # Create subplots
         fig = make_subplots(
             rows=3, cols=2,
@@ -869,7 +961,7 @@ class Visualizer:
         )
         
         # Add convergence plot
-        if 'convergence_history' in results:
+        if 'convergence_history' in results and results['convergence_history']:  # FIXED
             fig.add_trace(
                 go.Scatter(x=list(range(len(results['convergence_history']))),
                           y=results['convergence_history'],
@@ -896,7 +988,7 @@ class Visualizer:
         )
         
         # Add economic metrics
-        if 'economic' in results:
+        if 'economic' in results and results['economic']:  # FIXED
             metrics = ['COE', 'LPSP', 'REF']
             values = [results['economic'].get(m.lower(), 0) for m in metrics]
             
@@ -907,7 +999,9 @@ class Visualizer:
             )
         
         # Add component sizing
-        if 'optimization' in results and 'component_sizing' in results['optimization']:
+        if ('optimization' in results and results['optimization'] and 
+            'component_sizing' in results['optimization'] and 
+            results['optimization']['component_sizing']):  # FIXED
             sizing = results['optimization']['component_sizing']
             components = ['PV', 'WT', 'Battery']
             counts = [sizing.get('n_pv', 0), sizing.get('n_wt', 0), sizing.get('n_bt', 0)]
@@ -943,11 +1037,15 @@ class Visualizer:
             results: Complete results dictionary
             base_path: Base path for saving plots
         """
+        if not results:  # FIXED: Check if results is not empty
+            logging.warning("No results data available for plotting")
+            return
+        
         base_path = Path(base_path)
         base_path.mkdir(parents=True, exist_ok=True)
         
         # Convergence plots
-        if 'convergence_history' in results:
+        if 'convergence_history' in results and results['convergence_history']:  # FIXED
             self.plot_convergence(
                 results['convergence_history'],
                 save_path=base_path / "convergence.png",
@@ -955,7 +1053,7 @@ class Visualizer:
             )
         
         # Energy flows
-        if 'energy_flows' in results:
+        if 'energy_flows' in results and results['energy_flows'] is not None:  # FIXED
             self.plot_energy_flows(
                 results['energy_flows'],
                 save_path=base_path / "energy_flows.png",
@@ -963,7 +1061,7 @@ class Visualizer:
             )
         
         # Economic analysis
-        if 'economic' in results:
+        if 'economic' in results and results['economic']:  # FIXED
             self.plot_economic_analysis(
                 results['economic'],
                 save_path=base_path / "economic_analysis.png",
@@ -971,7 +1069,9 @@ class Visualizer:
             )
         
         # Component sizing
-        if 'optimization' in results and 'component_sizing' in results['optimization']:
+        if ('optimization' in results and results['optimization'] and
+            'component_sizing' in results['optimization'] and 
+            results['optimization']['component_sizing']):  # FIXED
             self.plot_component_sizing(
                 results['optimization']['component_sizing'],
                 save_path=base_path / "component_sizing.png",
@@ -979,7 +1079,7 @@ class Visualizer:
             )
         
         # Monte Carlo results
-        if 'monte_carlo' in results:
+        if 'monte_carlo' in results and results['monte_carlo']:  # FIXED
             self.plot_monte_carlo_results(
                 results['monte_carlo'],
                 save_path=base_path / "monte_carlo_results.png",
@@ -996,183 +1096,192 @@ class Visualizer:
         logging.info(f"All available plots saved to {base_path}")
 
 
-import os
-from pathlib import Path
+# FIXED: Updated main execution script with proper DataFrame handling
+if __name__ == "__main__":
+    import os
+    from pathlib import Path
 
-# Ensure the output directory exists
-output_dir = 'outputs/figures/static'
-Path(output_dir).mkdir(parents=True, exist_ok=True)
+    # Ensure the output directory exists
+    output_dir = 'outputs/figures/static'
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
 
-# 1. Initialize the Visualizer
-vis = Visualizer()
-print("Visualizer initialized.")
+    # 1. Initialize the Visualizer
+    vis = Visualizer()
+    print("Visualizer initialized.")
 
-# --- Simulate Data ---
-np.random.seed(42)
-num_hours = 168  # One week
-time_index = pd.to_datetime(pd.date_range('2025-01-01', periods=num_hours, freq='H'))
+    # --- Simulate Data ---
+    np.random.seed(42)
+    num_hours = 168  # One week
+    # FIXED: Changed 'H' to 'h' to fix pandas warning
+    time_index = pd.to_datetime(pd.date_range('2025-01-01', periods=num_hours, freq='h'))
 
-# 2. Simulate Optimization Convergence
-print("Simulating optimization convergence data...")
-convergence_history = np.logspace(3, 1, num_hours) + np.random.normal(0, 0.5, num_hours)
-convergence_history_ga = np.logspace(3, 1.2, num_hours) + np.random.normal(0, 0.8, num_hours)
-convergence_data = {
-    "Genetic Algorithm": convergence_history_ga.tolist(),
-    "Particle Swarm Optimization": convergence_history.tolist()
-}
-print("Simulated convergence data.")
-
-# 3. Simulate Energy Flow Data
-print("Simulating energy flow data...")
-pv_power = np.maximum(0, 100 * np.sin(np.pi * (np.arange(num_hours) % 24) / 12) + np.random.normal(0, 5, num_hours))
-wt_power = np.maximum(0, 50 + 20 * np.sin(np.pi * (np.arange(num_hours) / 24)) + np.random.normal(0, 10, num_hours))
-load_demand = 120 + 30 * np.sin(np.pi * (np.arange(num_hours) % 24) / 12) + np.random.normal(0, 5, num_hours)
-
-# Simulate battery/EV operations
-battery_charge = np.maximum(0, pv_power - load_demand / 2 - np.random.normal(0, 10, num_hours))
-battery_discharge = np.minimum(0, pv_power - load_demand + np.random.normal(0, 10, num_hours))
-battery_soc = np.clip(np.cumsum(battery_charge + battery_discharge) / 100, 0.2, 0.95)
-battery_soc = battery_soc + 0.5 - battery_soc[0] # Adjust to start at 50%
-battery_soc = np.clip(battery_soc, 0.2, 0.95)
-
-ev_charge = np.maximum(0, load_demand / 4 + np.random.normal(0, 5, num_hours))
-ev_discharge = np.minimum(0, -np.random.normal(0, 5, num_hours))
-ev_mean_soc = np.clip(np.cumsum(ev_charge + ev_discharge) / 50 + 0.6, 0.1, 0.9)
-ev_mean_soc = ev_mean_soc + 0.5 - ev_mean_soc[0]
-ev_mean_soc = np.clip(ev_mean_soc, 0.1, 0.9)
-
-
-grid_purchase = np.maximum(0, load_demand - pv_power - battery_discharge - ev_discharge)
-grid_sale = np.minimum(0, pv_power - load_demand - battery_charge - ev_charge)
-
-simulation_results = pd.DataFrame({
-    'pv_power': pv_power,
-    'wt_power': wt_power,
-    'load_demand': load_demand,
-    'battery_charge': battery_charge,
-    'battery_discharge': -battery_discharge, # make positive for plot
-    'ev_charge': ev_charge,
-    'ev_discharge': -ev_discharge,
-    'grid_purchase': grid_purchase,
-    'grid_sale': -grid_sale, # make positive for plot
-    'battery_soc': battery_soc,
-    'ev_mean_soc': ev_mean_soc
-}, index=time_index)
-print("Simulated energy flow data.")
-
-# 4. Simulate Monte Carlo Results
-print("Simulating Monte Carlo results...")
-num_simulations = 100
-scenarios = ['no_v2g', 'managed_v2g', 'optimized_v2g']
-monte_carlo_results = {}
-for scenario in scenarios:
-    coe = np.random.normal(0.15, 0.02, num_simulations) if scenario == 'optimized_v2g' else np.random.normal(0.2, 0.03, num_simulations)
-    lpsp = np.random.normal(0.01, 0.005, num_simulations) if scenario == 'optimized_v2g' else np.random.normal(0.05, 0.01, num_simulations)
-    ref = np.random.normal(0.8, 0.05, num_simulations) if scenario == 'optimized_v2g' else np.random.normal(0.6, 0.05, num_simulations)
-    
-    # Add some variation to total_v2g_energy for the plots
-    total_v2g_energy = np.random.normal(200, 50, num_simulations) if scenario == 'optimized_v2g' else np.zeros(num_simulations)
-    
-    monte_carlo_results[scenario] = {
-        'detailed_results': pd.DataFrame({
-            'coe': coe, 'lpsp': lpsp, 'ref': ref, 'total_v2g_energy': total_v2g_energy
-        })
+    # 2. Simulate Optimization Convergence
+    print("Simulating optimization convergence data...")
+    convergence_history = np.logspace(3, 1, num_hours) + np.random.normal(0, 0.5, num_hours)
+    convergence_history_ga = np.logspace(3, 1.2, num_hours) + np.random.normal(0, 0.8, num_hours)
+    convergence_data = {
+        "Genetic Algorithm": convergence_history_ga.tolist(),
+        "Particle Swarm Optimization": convergence_history.tolist()
     }
-print("Simulated Monte Carlo data.")
+    print("Simulated convergence data.")
 
-# 5. Simulate Economic Analysis Results
-print("Simulating economic analysis results...")
-economic_results = {
-    'coe': 0.145, # $/kWh
-    'lpsp': 0.005, # %
-    'ref': 0.85, # %
-    'npc': 550000, # $
-    'total_grid_cost': 5000, # $
-    'renewable_penetration': 85,
-    'cost_breakdown': {
-        'Capital': 400000,
-        'Operation & Maintenance': 100000,
-        'Grid Purchase': 50000
+    # 3. Simulate Energy Flow Data
+    print("Simulating energy flow data...")
+    pv_power = np.maximum(0, 100 * np.sin(np.pi * (np.arange(num_hours) % 24) / 12) + np.random.normal(0, 5, num_hours))
+    wt_power = np.maximum(0, 50 + 20 * np.sin(np.pi * (np.arange(num_hours) / 24)) + np.random.normal(0, 10, num_hours))
+    load_demand = 120 + 30 * np.sin(np.pi * (np.arange(num_hours) % 24) / 12) + np.random.normal(0, 5, num_hours)
+
+    # Simulate battery/EV operations
+    battery_charge = np.maximum(0, pv_power - load_demand / 2 - np.random.normal(0, 10, num_hours))
+    battery_discharge = np.minimum(0, pv_power - load_demand + np.random.normal(0, 10, num_hours))
+    battery_soc = np.clip(np.cumsum(battery_charge + battery_discharge) / 100, 0.2, 0.95)
+    battery_soc = battery_soc + 0.5 - battery_soc[0] # Adjust to start at 50%
+    battery_soc = np.clip(battery_soc, 0.2, 0.95)
+
+    ev_charge = np.maximum(0, load_demand / 4 + np.random.normal(0, 5, num_hours))
+    ev_discharge = np.minimum(0, -np.random.normal(0, 5, num_hours))
+    ev_mean_soc = np.clip(np.cumsum(ev_charge + ev_discharge) / 50 + 0.6, 0.1, 0.9)
+    ev_mean_soc = ev_mean_soc + 0.5 - ev_mean_soc[0]
+    ev_mean_soc = np.clip(ev_mean_soc, 0.1, 0.9)
+
+    grid_purchase = np.maximum(0, load_demand - pv_power - battery_discharge - ev_discharge)
+    grid_sale = np.minimum(0, pv_power - load_demand - battery_charge - ev_charge)
+
+    simulation_results = pd.DataFrame({
+        'pv_power': pv_power,
+        'wt_power': wt_power,
+        'load_demand': load_demand,
+        'battery_charge': battery_charge,
+        'battery_discharge': -battery_discharge, # make positive for plot
+        'ev_charge': ev_charge,
+        'ev_discharge': -ev_discharge,
+        'grid_purchase': grid_purchase,
+        'grid_sale': -grid_sale, # make positive for plot
+        'battery_soc': battery_soc,
+        'ev_mean_soc': ev_mean_soc
+    }, index=time_index)
+    print("Simulated energy flow data.")
+
+    # 4. Simulate Monte Carlo Results
+    print("Simulating Monte Carlo results...")
+    num_simulations = 100
+    scenarios = ['no_v2g', 'managed_v2g', 'optimized_v2g']
+    monte_carlo_results = {}
+    for scenario in scenarios:
+        coe = np.random.normal(0.15, 0.02, num_simulations) if scenario == 'optimized_v2g' else np.random.normal(0.2, 0.03, num_simulations)
+        lpsp = np.random.normal(0.01, 0.005, num_simulations) if scenario == 'optimized_v2g' else np.random.normal(0.05, 0.01, num_simulations)
+        ref = np.random.normal(0.8, 0.05, num_simulations) if scenario == 'optimized_v2g' else np.random.normal(0.6, 0.05, num_simulations)
+        
+        # Add some variation to total_v2g_energy for the plots
+        total_v2g_energy = np.random.normal(200, 50, num_simulations) if scenario == 'optimized_v2g' else np.zeros(num_simulations)
+        
+        monte_carlo_results[scenario] = {
+            'detailed_results': pd.DataFrame({
+                'coe': coe, 'lpsp': lpsp, 'ref': ref, 'total_v2g_energy': total_v2g_energy
+            })
+        }
+    print("Simulated Monte Carlo data.")
+
+    # 5. Simulate Economic Analysis Results
+    print("Simulating economic analysis results...")
+    economic_results = {
+        'coe': 0.145, # $/kWh
+        'lpsp': 0.005, # %
+        'ref': 0.85, # %
+        'npc': 550000, # $
+        'total_grid_cost': 5000, # $
+        'renewable_penetration': 85,
+        'cost_breakdown': {
+            'Capital': 400000,
+            'Operation & Maintenance': 100000,
+            'Grid Purchase': 50000
+        }
     }
-}
-print("Simulated economic analysis data.")
+    print("Simulated economic analysis data.")
 
-# 6. Simulate Component Sizing Results
-print("Simulating component sizing results...")
-component_sizing = {
-    'n_pv': 500, # panels
-    'n_wt': 10,  # turbines
-    'n_bt': 12,  # battery units
-    'autonomy_days': 2.5
-}
-print("Simulated component sizing data.")
+    # 6. Simulate Component Sizing Results
+    print("Simulating component sizing results...")
+    component_sizing = {
+        'n_pv': 500, # panels
+        'n_wt': 10,  # turbines
+        'n_bt': 12,  # battery units
+        'autonomy_days': 2.5
+    }
+    print("Simulated component sizing data.")
 
-# 7. Simulate Sensitivity Analysis Results
-print("Simulating sensitivity analysis data...")
-parameters = ['pv_cost', 'grid_price', 'load_growth']
-sensitivity_data = []
-base_coe = 0.145
+    # 7. Simulate Sensitivity Analysis Results
+    print("Simulating sensitivity analysis data...")
+    parameters = ['pv_cost', 'grid_price', 'load_growth']
+    sensitivity_data = []
+    base_coe = 0.145
 
-for param in parameters:
-    for mult in [0.8, 0.9, 1.0, 1.1, 1.2]:
-        if param == 'pv_cost':
-            coe = base_coe * (1 + (mult - 1) * 0.25)
-        elif param == 'grid_price':
-            coe = base_coe * (1 + (mult - 1) * 0.5)
-        elif param == 'load_growth':
-            coe = base_coe * (1 + (mult - 1) * 0.3)
-        sensitivity_data.append({
-            'parameter': param,
-            'multiplier': mult,
-            'coe': coe + np.random.normal(0, 0.002)
-        })
+    for param in parameters:
+        for mult in [0.8, 0.9, 1.0, 1.1, 1.2]:
+            if param == 'pv_cost':
+                coe = base_coe * (1 + (mult - 1) * 0.25)
+            elif param == 'grid_price':
+                coe = base_coe * (1 + (mult - 1) * 0.5)
+            elif param == 'load_growth':
+                coe = base_coe * (1 + (mult - 1) * 0.3)
+            sensitivity_data.append({
+                'parameter': param,
+                'multiplier': mult,
+                'coe': coe + np.random.normal(0, 0.002)
+            })
 
-sensitivity_results = pd.DataFrame(sensitivity_data)
-print("Simulated sensitivity analysis data.")
+    sensitivity_results = pd.DataFrame(sensitivity_data)
+    print("Simulated sensitivity analysis data.")
 
-# --- Run Visualizations ---
-print("\nGenerating visualizations...")
-# Plot 1: Convergence
-vis.plot_convergence(
-    convergence_data, 
-    save_path=os.path.join(output_dir, 'convergence_plot.png'),
-    show_plot=False
-)
+    # --- Run Visualizations ---
+    print("\nGenerating visualizations...")
+    
+    try:
+        # Plot 1: Convergence
+        vis.plot_convergence(
+            convergence_data, 
+            save_path=os.path.join(output_dir, 'convergence_plot.png'),
+            show_plot=False
+        )
 
-# Plot 2: Energy Flows
-vis.plot_energy_flows(
-    simulation_results, 
-    time_range=(0, 168), 
-    save_path=os.path.join(output_dir, 'energy_flows_plot.png'),
-    show_plot=False
-)
+        # Plot 2: Energy Flows
+        vis.plot_energy_flows(
+            simulation_results, 
+            time_range=(0, 168), 
+            save_path=os.path.join(output_dir, 'energy_flows_plot.png'),
+            show_plot=False
+        )
 
-# Plot 3: Monte Carlo Results
-vis.plot_monte_carlo_results(
-    monte_carlo_results,
-    save_path=os.path.join(output_dir, 'monte_carlo_results.png'),
-    show_plot=False
-)
+        # Plot 3: Monte Carlo Results
+        vis.plot_monte_carlo_results(
+            monte_carlo_results,
+            save_path=os.path.join(output_dir, 'monte_carlo_results.png'),
+            show_plot=False
+        )
 
-# Plot 4: Economic Analysis
-vis.plot_economic_analysis(
-    economic_results,
-    save_path=os.path.join(output_dir, 'economic_analysis.png'),
-    show_plot=False
-)
+        # Plot 4: Economic Analysis
+        vis.plot_economic_analysis(
+            economic_results,
+            save_path=os.path.join(output_dir, 'economic_analysis.png'),
+            show_plot=False
+        )
 
-# Plot 5: Component Sizing
-vis.plot_component_sizing(
-    component_sizing,
-    save_path=os.path.join(output_dir, 'component_sizing.png'),
-    show_plot=False
-)
+        # Plot 5: Component Sizing
+        vis.plot_component_sizing(
+            component_sizing,
+            save_path=os.path.join(output_dir, 'component_sizing.png'),
+            show_plot=False
+        )
 
-# Plot 6: Sensitivity Analysis
-vis.plot_sensitivity_analysis(
-    sensitivity_results,
-    save_path=os.path.join(output_dir, 'sensitivity_analysis.png'),
-    show_plot=False
-)
+        # Plot 6: Sensitivity Analysis
+        vis.plot_sensitivity_analysis(
+            sensitivity_results,
+            save_path=os.path.join(output_dir, 'sensitivity_analysis.png'),
+            show_plot=False
+        )
 
-print("\nAll plots have been generated and saved to 'outputs/figures/static'.")
+        print("\nAll plots have been generated and saved to 'outputs/figures/static'.")
+    
+    except Exception as e:
+        print(f"Error during visualization generation: {e}")
+        import traceback
+        traceback.print_exc()

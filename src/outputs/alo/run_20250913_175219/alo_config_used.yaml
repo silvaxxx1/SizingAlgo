@@ -1,0 +1,174 @@
+advanced:
+  debug_mode: false
+  random_seed: 42
+bounds:
+  autonomy_days:
+  - 1
+  - 5
+  n_bt:
+  - 10
+  - 100
+  n_pv:
+  - 10
+  - 100
+  n_wt:
+  - 5
+  - 50
+components:
+  battery:
+    autonomy_days: 3
+    capacity: 35380
+    converter_efficiency: 0.95
+    efficiency: 0.85
+    inverter_efficiency: 0.95
+    soc_max: 1.0
+    soc_min: 0.2
+    voltage: 48
+  ev:
+    capacity: 24000
+    charge_rate: 7.2
+    charging_efficiency: 0.9
+    critical_soc_threshold: 0.2
+    discharge_rate: 7.2
+    soc_max: 0.95
+    soc_min: 0.2
+  pv:
+    noct: 45
+    rated_power: 325
+    reference_irradiance: 1000
+    reference_temperature: 25
+    system_efficiency: 0.95
+    temp_coefficient: -0.0037
+  wind_turbine:
+    cut_in_speed: 2.5
+    cut_out_speed: 40
+    hub_height: 70
+    power_law_exponent: 0.25
+    rated_power: 5000
+    rated_speed: 9.5
+    reference_height: 43.6
+    system_efficiency: 0.95
+constraints:
+  lpsp_max: 0.01
+  ref_min: 0.5
+  reliability_min: 0.99
+data_paths:
+  economic_parameters_path: data/economic_parameters.json
+  ev_data_path: data/ev_data.csv
+  load_data_path: data/load_data.csv
+  weather_data_path: data/weather_data.csv
+economic:
+  component_costs:
+    battery: 300
+    converter: 150
+    installation_factor: 0.2
+    inverter: 100
+    maintenance_factor: 0.02
+    pv_panel: 200
+    wind_turbine: 2000
+  discount_rate: 0.05
+  grid_buy_price: 0.023
+  grid_sell_price: 0.015
+  inflation_rate: 0.025
+  interest_rate: 0.03
+  project_lifetime: 20
+location:
+  latitude: 32.8872
+  longitude: 13.1913
+  name: Tripoli, Libya
+  timezone: Africa/Tripoli
+log_level: INFO
+logging:
+  console_output: true
+  level: INFO
+  log_file: outputs/pipeline.log
+monte_carlo:
+  ev_patterns:
+    arrival_time_mean: 18.0
+    arrival_time_std: 2.0
+    daily_consumption_mean: 12
+    daily_consumption_std: 4
+    departure_time_mean: 7.0
+    departure_time_std: 2.0
+    soc_arrival_mean: 0.6
+    soc_arrival_std: 0.2
+  ev_scenarios:
+  - 10
+  - 30
+  num_simulations: 100
+multi_objective:
+  scaling:
+    balancing_factor: 1.0
+    constraint_penalty: 1000
+    lpsp_penalty: 1000
+  weights:
+    coe: 0.4
+    lpsp: 0.3
+    ref: 0.3
+optimization:
+  algorithms:
+  - IALO
+  - ALO
+  - PSO
+  - CSA
+  default_algorithm: IALO
+  ialo:
+    alpha: 0.01
+    beta: 1.5
+    elite_ratio: 0.1
+    levy_probability: 0.3
+  max_iterations: 10
+  population_size: 30
+output:
+  base_directory: outputs/
+  figure_settings:
+    bbox_inches: tight
+    dpi: 300
+    format: png
+  file_formats:
+    data: csv
+    figures: png
+    reports: html
+  subdirectories:
+    data: processed_data/
+    figures: figures/
+    optimization_results: optimization_results/
+    reports: reports/
+output_dir: outputs/
+sensitivity_analysis:
+  output_metrics:
+  - coe
+  - lpsp
+  - ref
+  - npc
+  parameters:
+    battery_cost:
+    - 0.8
+    - 0.9
+    - 1.0
+    - 1.1
+    - 1.2
+    grid_buy_price:
+    - 0.8
+    - 0.9
+    - 1.0
+    - 1.1
+    - 1.2
+    load_demand:
+    - 0.8
+    - 0.9
+    - 1.0
+    - 1.1
+    - 1.2
+    solar_irradiance:
+    - 0.8
+    - 0.9
+    - 1.0
+    - 1.1
+    - 1.2
+    wind_speed:
+    - 0.8
+    - 0.9
+    - 1.0
+    - 1.1
+    - 1.2
