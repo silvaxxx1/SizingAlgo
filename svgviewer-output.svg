@@ -1,0 +1,354 @@
+<svg viewBox="0 0 1400 2000" xmlns="http://www.w3.org/2000/svg">
+  <!-- Define styles -->
+  <defs>
+    <style>
+      .phase-box { fill: #2c3e50; stroke: #34495e; stroke-width: 3; }
+      .component-box { fill: #3498db; stroke: #2980b9; stroke-width: 2; }
+      .data-box { fill: #27ae60; stroke: #229954; stroke-width: 2; }
+      .algo-box { fill: #e74c3c; stroke: #c0392b; stroke-width: 2; }
+      .analysis-box { fill: #9b59b6; stroke: #8e44ad; stroke-width: 2; }
+      .output-box { fill: #f39c12; stroke: #d68910; stroke-width: 2; }
+      .title-text { fill: white; font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; }
+      .desc-text { fill: white; font-family: Arial, sans-serif; font-size: 12px; }
+      .small-text { fill: white; font-family: Arial, sans-serif; font-size: 10px; }
+      .arrow { stroke: #34495e; stroke-width: 3; fill: none; marker-end: url(#arrowhead); }
+      .data-flow { stroke: #27ae60; stroke-width: 2; stroke-dasharray: 5,5; fill: none; marker-end: url(#arrowhead-green); }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#34495e" />
+    </marker>
+    <marker id="arrowhead-green" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#27ae60" />
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="700" y="30" class="title-text" text-anchor="middle" font-size="24">V2G MICROGRID OPTIMIZATION PIPELINE</text>
+  <text x="700" y="55" class="desc-text" text-anchor="middle" font-size="14">Research Project Architecture & Data Flow</text>
+
+  <!-- PHASE 1: Configuration & Initialization -->
+  <rect x="50" y="80" width="1300" height="120" class="phase-box" rx="10"/>
+  <text x="700" y="105" class="title-text" text-anchor="middle">PHASE 1: CONFIGURATION & INITIALIZATION</text>
+  
+  <rect x="100" y="120" width="200" height="60" class="data-box" rx="5"/>
+  <text x="200" y="145" class="title-text" text-anchor="middle">config.yaml</text>
+  <text x="200" y="165" class="small-text" text-anchor="middle">System Parameters</text>
+  <text x="200" y="178" class="small-text" text-anchor="middle">Bounds & Constraints</text>
+  
+  <rect x="350" y="120" width="200" height="60" class="component-box" rx="5"/>
+  <text x="450" y="145" class="title-text" text-anchor="middle">DataLoader</text>
+  <text x="450" y="165" class="small-text" text-anchor="middle">Load weather, load,</text>
+  <text x="450" y="178" class="small-text" text-anchor="middle">EV data files</text>
+  
+  <rect x="600" y="120" width="200" height="60" class="data-box" rx="5"/>
+  <text x="700" y="145" class="title-text" text-anchor="middle">Weather Data</text>
+  <text x="700" y="165" class="small-text" text-anchor="middle">Solar irradiance</text>
+  <text x="700" y="178" class="small-text" text-anchor="middle">Wind speed, Temp</text>
+  
+  <rect x="850" y="120" width="200" height="60" class="data-box" rx="5"/>
+  <text x="950" y="145" class="title-text" text-anchor="middle">Load Profile</text>
+  <text x="950" y="165" class="small-text" text-anchor="middle">Hourly residential</text>
+  <text x="950" y="178" class="small-text" text-anchor="middle">demand (8760 hrs)</text>
+  
+  <rect x="1100" y="120" width="200" height="60" class="data-box" rx="5"/>
+  <text x="1200" y="145" class="title-text" text-anchor="middle">EV Data</text>
+  <text x="1200" y="165" class="small-text" text-anchor="middle">Arrival/Departure</text>
+  <text x="1200" y="178" class="small-text" text-anchor="middle">SOC patterns</text>
+
+  <!-- Arrows from Phase 1 -->
+  <path d="M 200 180 L 200 230" class="arrow"/>
+  <path d="M 450 180 L 450 230" class="arrow"/>
+  <path d="M 700 180 L 700 230" class="arrow"/>
+  <path d="M 950 180 L 950 230" class="arrow"/>
+  <path d="M 1200 180 L 1200 230" class="arrow"/>
+
+  <!-- PHASE 2: Component Modeling -->
+  <rect x="50" y="230" width="1300" height="180" class="phase-box" rx="10"/>
+  <text x="700" y="255" class="title-text" text-anchor="middle">PHASE 2: COMPONENT MODELING & INITIALIZATION</text>
+  
+  <rect x="100" y="270" width="180" height="120" class="component-box" rx="5"/>
+  <text x="190" y="295" class="title-text" text-anchor="middle">PV System</text>
+  <text x="190" y="315" class="small-text" text-anchor="middle">Eq. 3.1, 3.2</text>
+  <text x="190" y="330" class="small-text" text-anchor="middle">P_pv = f(G, T_c)</text>
+  <text x="190" y="345" class="small-text" text-anchor="middle">T_c calculation</text>
+  <text x="190" y="360" class="small-text" text-anchor="middle">Temp coefficient</text>
+  <text x="190" y="375" class="small-text" text-anchor="middle">NOCT modeling</text>
+  
+  <rect x="310" y="270" width="180" height="120" class="component-box" rx="5"/>
+  <text x="400" y="295" class="title-text" text-anchor="middle">Wind Turbine</text>
+  <text x="400" y="315" class="small-text" text-anchor="middle">Eq. 3.3</text>
+  <text x="400" y="330" class="small-text" text-anchor="middle">P_wt = f(v_wind)</text>
+  <text x="400" y="345" class="small-text" text-anchor="middle">Cut-in: 2.8 m/s</text>
+  <text x="400" y="360" class="small-text" text-anchor="middle">Rated: 7.5 m/s</text>
+  <text x="400" y="375" class="small-text" text-anchor="middle">Cut-out: 20 m/s</text>
+  
+  <rect x="520" y="270" width="180" height="120" class="component-box" rx="5"/>
+  <text x="610" y="295" class="title-text" text-anchor="middle">Battery System</text>
+  <text x="610" y="315" class="small-text" text-anchor="middle">SOC tracking</text>
+  <text x="610" y="330" class="small-text" text-anchor="middle">Charge/Discharge</text>
+  <text x="610" y="345" class="small-text" text-anchor="middle">η = 0.85</text>
+  <text x="610" y="360" class="small-text" text-anchor="middle">SOC: [0.2, 1.0]</text>
+  <text x="610" y="375" class="small-text" text-anchor="middle">Autonomy days</text>
+  
+  <rect x="730" y="270" width="180" height="120" class="component-box" rx="5"/>
+  <text x="820" y="295" class="title-text" text-anchor="middle">EV Fleet</text>
+  <text x="820" y="315" class="small-text" text-anchor="middle">V2G/G2V modes</text>
+  <text x="820" y="330" class="small-text" text-anchor="middle">SOC: [0.2, 0.95]</text>
+  <text x="820" y="345" class="small-text" text-anchor="middle">14 kWh capacity</text>
+  <text x="820" y="360" class="small-text" text-anchor="middle">Arrival/Departure</text>
+  <text x="820" y="375" class="small-text" text-anchor="middle">scheduling</text>
+  
+  <rect x="940" y="270" width="180" height="120" class="component-box" rx="5"/>
+  <text x="1030" y="295" class="title-text" text-anchor="middle">Grid Interface</text>
+  <text x="1030" y="315" class="small-text" text-anchor="middle">Buy: $0.04/kWh</text>
+  <text x="1030" y="330" class="small-text" text-anchor="middle">Sell: $0.05/kWh</text>
+  <text x="1030" y="345" class="small-text" text-anchor="middle">Import/Export</text>
+  <text x="1030" y="360" class="small-text" text-anchor="middle">power tracking</text>
+  <text x="1030" y="375" class="small-text" text-anchor="middle">Cost calculation</text>
+  
+  <rect x="1150" y="270" width="180" height="120" class="component-box" rx="5"/>
+  <text x="1240" y="295" class="title-text" text-anchor="middle">Converters</text>
+  <text x="1240" y="315" class="small-text" text-anchor="middle">DC/DC conversion</text>
+  <text x="1240" y="330" class="small-text" text-anchor="middle">DC/AC inversion</text>
+  <text x="1240" y="345" class="small-text" text-anchor="middle">Efficiency losses</text>
+  <text x="1240" y="360" class="small-text" text-anchor="middle">Power flow</text>
+  <text x="1240" y="375" class="small-text" text-anchor="middle">management</text>
+
+  <!-- Arrows to Phase 3 -->
+  <path d="M 700 410 L 700 460" class="arrow"/>
+
+  <!-- PHASE 3: Energy Management System -->
+  <rect x="50" y="460" width="1300" height="200" class="phase-box" rx="10"/>
+  <text x="700" y="485" class="title-text" text-anchor="middle">PHASE 3: RULE-BASED ENERGY MANAGEMENT SYSTEM (RB-EMS)</text>
+  
+  <rect x="100" y="505" width="250" height="140" class="component-box" rx="5"/>
+  <text x="225" y="530" class="title-text" text-anchor="middle">Operation Modes</text>
+  <text x="225" y="555" class="small-text" text-anchor="middle">MODE 1: Renewable Supply</text>
+  <text x="225" y="570" class="small-text" text-anchor="middle">P_pv + P_wt ≥ P_load</text>
+  <text x="225" y="590" class="small-text" text-anchor="middle">MODE 2: Battery Discharge</text>
+  <text x="225" y="605" class="small-text" text-anchor="middle">SOC_bat > SOC_min</text>
+  <text x="225" y="625" class="small-text" text-anchor="middle">MODE 3: Grid to Vehicle (G2V)</text>
+  <text x="225" y="640" class="small-text" text-anchor="middle">MODE 4: Vehicle to Grid (V2G)</text>
+  
+  <rect x="400" y="505" width="250" height="140" class="component-box" rx="5"/>
+  <text x="525" y="530" class="title-text" text-anchor="middle">Power Flow Control</text>
+  <text x="525" y="555" class="small-text" text-anchor="middle">Real-time power balancing</text>
+  <text x="525" y="570" class="small-text" text-anchor="middle">SOC monitoring (Battery + EV)</text>
+  <text x="525" y="585" class="small-text" text-anchor="middle">Load demand satisfaction</text>
+  <text x="525" y="600" class="small-text" text-anchor="middle">Surplus energy management</text>
+  <text x="525" y="615" class="small-text" text-anchor="middle">Deficit energy handling</text>
+  <text x="525" y="630" class="small-text" text-anchor="middle">Grid interaction decisions</text>
+  
+  <rect x="700" y="505" width="250" height="140" class="component-box" rx="5"/>
+  <text x="825" y="530" class="title-text" text-anchor="middle">Annual Simulation</text>
+  <text x="825" y="555" class="small-text" text-anchor="middle">8760 hourly time steps</text>
+  <text x="825" y="570" class="small-text" text-anchor="middle">Weather-driven generation</text>
+  <text x="825" y="585" class="small-text" text-anchor="middle">Load profile tracking</text>
+  <text x="825" y="600" class="small-text" text-anchor="middle">EV availability scheduling</text>
+  <text x="825" y="615" class="small-text" text-anchor="middle">Energy flow recording</text>
+  <text x="825" y="630" class="small-text" text-anchor="middle">Performance metrics</text>
+  
+  <rect x="1000" y="505" width="250" height="140" class="analysis-box" rx="5"/>
+  <text x="1125" y="530" class="title-text" text-anchor="middle">Metrics Collection</text>
+  <text x="1125" y="555" class="small-text" text-anchor="middle">Loss of Power Supply (LPSP)</text>
+  <text x="1125" y="570" class="small-text" text-anchor="middle">Renewable Energy Fraction (REF)</text>
+  <text x="1125" y="585" class="small-text" text-anchor="middle">Energy import/export</text>
+  <text x="1125" y="600" class="small-text" text-anchor="middle">Battery cycles</text>
+  <text x="1125" y="615" class="small-text" text-anchor="middle">EV charging patterns</text>
+  <text x="1125" y="630" class="small-text" text-anchor="middle">Grid transactions</text>
+
+  <!-- Arrow to Phase 4 -->
+  <path d="M 700 660 L 700 710" class="arrow"/>
+
+  <!-- PHASE 4: Multi-Algorithm Optimization -->
+  <rect x="50" y="710" width="1300" height="240" class="phase-box" rx="10"/>
+  <text x="700" y="735" class="title-text" text-anchor="middle">PHASE 4: MULTI-OBJECTIVE OPTIMIZATION (Component Sizing)</text>
+  
+  <rect x="100" y="755" width="280" height="180" class="algo-box" rx="5"/>
+  <text x="240" y="780" class="title-text" text-anchor="middle">IALO (Improved ALO)</text>
+  <text x="240" y="800" class="small-text" text-anchor="middle">Lévy Flight mechanism (Eq. 3.28-3.33)</text>
+  <text x="240" y="815" class="small-text" text-anchor="middle">Enhanced exploration/exploitation</text>
+  <text x="240" y="830" class="small-text" text-anchor="middle">Elite antlion selection</text>
+  <text x="240" y="845" class="small-text" text-anchor="middle">Random walk around antlions</text>
+  <text x="240" y="860" class="small-text" text-anchor="middle">Adaptive step size</text>
+  <text x="240" y="875" class="small-text" text-anchor="middle">Decision vars: [N_pv, N_wt, N_bt, AD]</text>
+  <text x="240" y="890" class="small-text" text-anchor="middle">Pop: 50, Iter: 100</text>
+  <text x="240" y="905" class="small-text" text-anchor="middle">Convergence tracking</text>
+  <text x="240" y="920" class="small-text" text-anchor="middle">Best solution history</text>
+  
+  <rect x="420" y="755" width="220" height="180" class="algo-box" rx="5"/>
+  <text x="530" y="780" class="title-text" text-anchor="middle">ALO (Standard)</text>
+  <text x="530" y="800" class="small-text" text-anchor="middle">Antlion hunting behavior</text>
+  <text x="530" y="815" class="small-text" text-anchor="middle">Trap building mechanism</text>
+  <text x="530" y="830" class="small-text" text-anchor="middle">Ant random walk</text>
+  <text x="530" y="845" class="small-text" text-anchor="middle">Roulette wheel selection</text>
+  <text x="530" y="860" class="small-text" text-anchor="middle">Position updates</text>
+  <text x="530" y="875" class="small-text" text-anchor="middle">Benchmark comparison</text>
+  <text x="530" y="890" class="small-text" text-anchor="middle">Same bounds as IALO</text>
+  
+  <rect x="680" y="755" width="220" height="180" class="algo-box" rx="5"/>
+  <text x="790" y="780" class="title-text" text-anchor="middle">PSO</text>
+  <text x="790" y="800" class="small-text" text-anchor="middle">Particle Swarm dynamics</text>
+  <text x="790" y="815" class="small-text" text-anchor="middle">Velocity updates</text>
+  <text x="790" y="830" class="small-text" text-anchor="middle">Personal best (pbest)</text>
+  <text x="790" y="845" class="small-text" text-anchor="middle">Global best (gbest)</text>
+  <text x="790" y="860" class="small-text" text-anchor="middle">Inertia weight</text>
+  <text x="790" y="875" class="small-text" text-anchor="middle">Cognitive/social params</text>
+  <text x="790" y="890" class="small-text" text-anchor="middle">Swarm convergence</text>
+  
+  <rect x="940" y="755" width="220" height="180" class="algo-box" rx="5"/>
+  <text x="1050" y="780" class="title-text" text-anchor="middle">CSA</text>
+  <text x="1050" y="800" class="small-text" text-anchor="middle">Cuckoo Search dynamics</text>
+  <text x="1050" y="815" class="small-text" text-anchor="middle">Lévy flights</text>
+  <text x="1050" y="830" class="small-text" text-anchor="middle">Nest abandonment</text>
+  <text x="1050" y="845" class="small-text" text-anchor="middle">Parasitic behavior</text>
+  <text x="1050" y="860" class="small-text" text-anchor="middle">Random nest selection</text>
+  <text x="1050" y="875" class="small-text" text-anchor="middle">Probability threshold</text>
+  <text x="1050" y="890" class="small-text" text-anchor="middle">Solution quality tracking</text>
+  
+  <rect x="1200" y="755" width="150" height="180" class="analysis-box" rx="5"/>
+  <text x="1275" y="780" class="title-text" text-anchor="middle">Objectives</text>
+  <text x="1275" y="800" class="small-text" text-anchor="middle">Minimize:</text>
+  <text x="1275" y="820" class="small-text" text-anchor="middle">COE (Eq. 3.15)</text>
+  <text x="1275" y="835" class="small-text" text-anchor="middle">$/kWh</text>
+  <text x="1275" y="855" class="small-text" text-anchor="middle">LPSP (Eq. 3.23)</text>
+  <text x="1275" y="870" class="small-text" text-anchor="middle">≤ 0.01</text>
+  <text x="1275" y="890" class="small-text" text-anchor="middle">Maximize:</text>
+  <text x="1275" y="905" class="small-text" text-anchor="middle">REF (Eq. 3.24)</text>
+  <text x="1275" y="920" class="small-text" text-anchor="middle">≥ 0.5</text>
+
+  <!-- Arrow to Phase 5 -->
+  <path d="M 700 950 L 700 1000" class="arrow"/>
+
+  <!-- PHASE 5: Monte Carlo Analysis -->
+  <rect x="50" y="1000" width="1300" height="160" class="phase-box" rx="10"/>
+  <text x="700" y="1025" class="title-text" text-anchor="middle">PHASE 5: MONTE CARLO SIMULATION (SMCM)</text>
+  
+  <rect x="100" y="1045" width="350" height="100" class="analysis-box" rx="5"/>
+  <text x="275" y="1070" class="title-text" text-anchor="middle">EV Behavior Modeling</text>
+  <text x="275" y="1090" class="small-text" text-anchor="middle">1000 simulations per scenario</text>
+  <text x="275" y="1105" class="small-text" text-anchor="middle">SOC_arrival ~ U(0.2, 0.95)</text>
+  <text x="275" y="1120" class="small-text" text-anchor="middle">T_arrival ~ N(18:00, 2h)</text>
+  <text x="275" y="1135" class="small-text" text-anchor="middle">T_departure ~ N(07:00, 2h)</text>
+  
+  <rect x="500" y="1045" width="350" height="100" class="analysis-box" rx="5"/>
+  <text x="675" y="1070" class="title-text" text-anchor="middle">Fleet Scenarios</text>
+  <text x="675" y="1090" class="small-text" text-anchor="middle">Scenario 1: 10 EVs (Low penetration)</text>
+  <text x="675" y="1105" class="small-text" text-anchor="middle">Scenario 2: 30 EVs (Medium penetration)</text>
+  <text x="675" y="1120" class="small-text" text-anchor="middle">Scenario 3: 60 EVs (High penetration)</text>
+  <text x="675" y="1135" class="small-text" text-anchor="middle">Statistical analysis of each scenario</text>
+  
+  <rect x="900" y="1045" width="350" height="100" class="analysis-box" rx="5"/>
+  <text x="1075" y="1070" class="title-text" text-anchor="middle">Uncertainty Quantification</text>
+  <text x="1075" y="1090" class="small-text" text-anchor="middle">Probability distributions</text>
+  <text x="1075" y="1105" class="small-text" text-anchor="middle">Confidence intervals</text>
+  <text x="1075" y="1120" class="small-text" text-anchor="middle">Risk assessment</text>
+  <text x="1075" y="1135" class="small-text" text-anchor="middle">Sensitivity to EV penetration</text>
+
+  <!-- Arrow to Phase 6 -->
+  <path d="M 700 1160 L 700 1210" class="arrow"/>
+
+  <!-- PHASE 6: Analysis & Results -->
+  <rect x="50" y="1210" width="1300" height="200" class="phase-box" rx="10"/>
+  <text x="700" y="1235" class="title-text" text-anchor="middle">PHASE 6: COMPREHENSIVE ANALYSIS</text>
+  
+  <rect x="100" y="1255" width="280" height="140" class="analysis-box" rx="5"/>
+  <text x="240" y="1280" class="title-text" text-anchor="middle">Economic Analysis</text>
+  <text x="240" y="1300" class="small-text" text-anchor="middle">Cost of Energy (COE)</text>
+  <text x="240" y="1315" class="small-text" text-anchor="middle">Net Present Cost (NPC)</text>
+  <text x="240" y="1330" class="small-text" text-anchor="middle">Levelized cost calculation</text>
+  <text x="240" y="1345" class="small-text" text-anchor="middle">Capital + O&M + Replacement</text>
+  <text x="240" y="1360" class="small-text" text-anchor="middle">Discount rate: 3%</text>
+  <text x="240" y="1375" class="small-text" text-anchor="middle">Project lifetime: 25 years</text>
+  
+  <rect x="420" y="1255" width="280" height="140" class="analysis-box" rx="5"/>
+  <text x="560" y="1280" class="title-text" text-anchor="middle">Reliability Assessment</text>
+  <text x="560" y="1300" class="small-text" text-anchor="middle">LPSP tracking</text>
+  <text x="560" y="1315" class="small-text" text-anchor="middle">Unmet load hours</text>
+  <text x="560" y="1330" class="small-text" text-anchor="middle">System autonomy</text>
+  <text x="560" y="1345" class="small-text" text-anchor="middle">Battery cycles</text>
+  <text x="560" y="1360" class="small-text" text-anchor="middle">EV availability impact</text>
+  <text x="560" y="1375" class="small-text" text-anchor="middle">Grid dependency</text>
+  
+  <rect x="740" y="1255" width="280" height="140" class="analysis-box" rx="5"/>
+  <text x="880" y="1280" class="title-text" text-anchor="middle">Environmental Impact</text>
+  <text x="880" y="1300" class="small-text" text-anchor="middle">Renewable Energy Fraction</text>
+  <text x="880" y="1315" class="small-text" text-anchor="middle">CO₂ emissions reduction</text>
+  <text x="880" y="1330" class="small-text" text-anchor="middle">Fossil fuel displacement</text>
+  <text x="880" y="1345" class="small-text" text-anchor="middle">Green energy utilization</text>
+  <text x="880" y="1360" class="small-text" text-anchor="middle">Grid carbon intensity</text>
+  <text x="880" y="1375" class="small-text" text-anchor="middle">Sustainability metrics</text>
+  
+  <rect x="1060" y="1255" width="280" height="140" class="analysis-box" rx="5"/>
+  <text x="1200" y="1280" class="title-text" text-anchor="middle">Sensitivity Analysis</text>
+  <text x="1200" y="1300" class="small-text" text-anchor="middle">Parameter variations</text>
+  <text x="1200" y="1315" class="small-text" text-anchor="middle">Weather uncertainty</text>
+  <text x="1200" y="1330" class="small-text" text-anchor="middle">Load variability</text>
+  <text x="1200" y="1345" class="small-text" text-anchor="middle">EV behavior patterns</text>
+  <text x="1200" y="1360" class="small-text" text-anchor="middle">Economic parameters</text>
+  <text x="1200" y="1375" class="small-text" text-anchor="middle">Component costs</text>
+
+  <!-- Arrow to Phase 7 -->
+  <path d="M 700 1410 L 700 1460" class="arrow"/>
+
+  <!-- PHASE 7: Outputs & Visualization -->
+  <rect x="50" y="1460" width="1300" height="480" class="phase-box" rx="10"/>
+  <text x="700" y="1485" class="title-text" text-anchor="middle">PHASE 7: ALGORITHM-SPECIFIC OUTPUT GENERATION</text>
+  
+  <!-- Output Structure -->
+  <rect x="100" y="1505" width="600" height="180" class="output-box" rx="5"/>
+  <text x="400" y="1530" class="title-text" text-anchor="middle">Directory Structure (Per Algorithm)</text>
+  <text x="400" y="1550" class="small-text" text-anchor="middle">outputs/</text>
+  <text x="400" y="1565" class="small-text" text-anchor="middle">├── ialo/run_YYYYMMDD_HHMMSS/</text>
+  <text x="400" y="1580" class="small-text" text-anchor="middle">│   ├── optimization_results/</text>
+  <text x="400" y="1595" class="small-text" text-anchor="middle">│   ├── figures/</text>
+  <text x="400" y="1610" class="small-text" text-anchor="middle">│   ├── reports/</text>
+  <text x="400" y="1625" class="small-text" text-anchor="middle">│   ├── raw_data/</text>
+  <text x="400" y="1640" class="small-text" text-anchor="middle">│   └── config_used.yaml</text>
+  <text x="400" y="1655" class="small-text" text-anchor="middle">├── alo/run_YYYYMMDD_HHMMSS/</text>
+  <text x="400" y="1670" class="small-text" text-anchor="middle">├── pso/run_YYYYMMDD_HHMMSS/</text>
+  <text x="400" y="1685" class="small-text" text-anchor="middle">└── csa/run_YYYYMMDD_HHMMSS/</text>
+
+  <!-- Visualization Outputs -->
+  <rect x="750" y="1505" width="550" height="180" class="output-box" rx="5"/>
+  <text x="1025" y="1530" class="title-text" text-anchor="middle">Visualization Outputs</text>
+  <text x="1025" y="1550" class="small-text" text-anchor="middle">• Convergence plots (fitness vs iteration)</text>
+  <text x="1025" y="1565" class="small-text" text-anchor="middle">• Energy flow diagrams (8760 hours)</text>
+  <text x="1025" y="1580" class="small-text" text-anchor="middle">• Component sizing visualization</text>
+  <text x="1025" y="1595" class="small-text" text-anchor="middle">• Economic analysis charts</text>
+  <text x="1025" y="1610" class="small-text" text-anchor="middle">• Monte Carlo probability distributions</text>
+  <text x="1025" y="1625" class="small-text" text-anchor="middle">• Reliability metrics dashboard</text>
+  <text x="1025" y="1640" class="small-text" text-anchor="middle">• Sensitivity analysis tornado diagrams</text>
+  <text x="1025" y="1655" class="small-text" text-anchor="middle">• Power balance verification plots</text>
+  <text x="1025" y="1670" class="small-text" text-anchor="middle">• SOC tracking for battery & EV</text>
+
+  <!-- Data Files -->
+  <rect x="100" y="1705" width="600" height="120" class="output-box" rx="5"/>
+  <text x="400" y="1730" class="title-text" text-anchor="middle">Data Output Files</text>
+  <text x="400" y="1750" class="small-text" text-anchor="middle">• {algorithm}_best_solution.csv - Optimal component sizing</text>
+  <text x="400" y="1765" class="small-text" text-anchor="middle">• {algorithm}_economic_analysis.csv - COE, NPC, LPSP, REF</text>
+  <text x="400" y="1780" class="small-text" text-anchor="middle">• {algorithm}_convergence.csv - Optimization progress</text>
+  <text x="400" y="1795" class="small-text" text-anchor="middle">• {algorithm}_energy_flows.csv - Hourly power flows</text>
+  <text x="400" y="1810" class="small-text" text-anchor="middle">• monte_carlo_results.csv - Statistical analysis</text>
+
+  <!-- Reports -->
+  <rect x="750" y="1705" width="550" height="120" class="output-box" rx="5"/>
+  <text x="1025" y="1730" class="title-text" text-anchor="middle">Report Generation</text>
+  <text x="1025" y="1750" class="small-text" text-anchor="middle">• {algorithm}_summary_report.txt - Key findings & metrics</text>
+  <text x="1025" y="1765" class="small-text" text-anchor="middle">• detailed_analysis.html - Interactive results</text>
+  <text x="1025" y="1780" class="small-text" text-anchor="middle">• comparison_metrics.md - Algorithm performance</text>
+  <text x="1025" y="1795" class="small-text" text-anchor="middle">• pipeline_YYYYMMDD_HHMMSS.log - Execution log</text>
+  <text x="1025" y="1810" class="small-text" text-anchor="middle">• config_used.yaml - Configuration archive</text>
+
+  <!-- Final Pipeline Completion -->
+  <rect x="100" y="1845" width="1200" height="80" class="phase-box" rx="10"/>
+  <text x="700" y="1870" class="title-text" text-anchor="middle">PIPELINE COMPLETION & READY FOR ANALYSIS</text>
+  <text x="700" y="1890" class="small-text" text-anchor="middle">✓ All phases completed successfully ✓ Results saved to algorithm directories</text>
+  <text x="700" y="1905" class="small-text" text-anchor="middle">✓ Visualizations generated ✓ Reports created ✓ Configuration archived</text>
+  <text x="700" y="1920" class="small-text" text-anchor="middle">Ready for: Algorithm comparison • Thesis integration • Sensitivity studies • Presentation</text>
+
+  <!-- Footer -->
+  <text x="700" y="1960" class="desc-text" text-anchor="middle" font-size="14">V2G Microgrid Optimization Research Project - Complete Pipeline Architecture</text>
+  <text x="700" y="1980" class="small-text" text-anchor="middle">Location: Tripoli, Libya | Algorithms: IALO, ALO, PSO, CSA | Time Horizon: 8760 hours (1 year)</text>
+
+</svg>

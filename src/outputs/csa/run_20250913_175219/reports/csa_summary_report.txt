@@ -1,0 +1,34 @@
+V2G MICROGRID OPTIMIZATION SUMMARY REPORT
+Algorithm: CSA
+Timestamp: 2025-09-13 18:02:13
+==================================================
+
+OPTIMIZATION RESULTS:
+==============================
+Best Fitness: -0.003835
+Execution Time: 587.69 seconds
+
+COMPONENT SIZING:
+==============================
+PV Panels: 67
+Wind Turbines: 23
+Battery Units: 10
+Autonomy Days: 2.68
+
+ECONOMIC ANALYSIS:
+==============================
+Cost of Energy (COE): $1.1001/kWh
+Loss of Power Supply Probability (LPSP): 0.0000
+Renewable Energy Fraction (REF): 1.0000
+Net Present Cost (NPC): $460480.50
+
+OUTPUT FILES:
+==============================
+Best Solution: optimization_results/csa_best_solution.csv
+Economic Analysis: optimization_results/csa_economic_analysis.csv
+Convergence Plot: figures/csa_convergence.png
+Energy Flows Plot: figures/csa_energy_flows.png
+Component Sizing Plot: figures/csa_component_sizing.png
+Raw Convergence Data: raw_data/csa_convergence.csv
+Raw Energy Flow Data: raw_data/csa_energy_flows.csv
+Configuration Used: csa_config_used.yaml

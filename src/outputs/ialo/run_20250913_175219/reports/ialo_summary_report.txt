@@ -1,0 +1,34 @@
+V2G MICROGRID OPTIMIZATION SUMMARY REPORT
+Algorithm: IALO
+Timestamp: 2025-09-13 18:00:17
+==================================================
+
+OPTIMIZATION RESULTS:
+==============================
+Best Fitness: -0.039969
+Execution Time: 471.22 seconds
+
+COMPONENT SIZING:
+==============================
+PV Panels: 54
+Wind Turbines: 20
+Battery Units: 10
+Autonomy Days: 2.10
+
+ECONOMIC ANALYSIS:
+==============================
+Cost of Energy (COE): $1.0278/kWh
+Loss of Power Supply Probability (LPSP): 0.0000
+Renewable Energy Fraction (REF): 1.0000
+Net Present Cost (NPC): $415593.00
+
+OUTPUT FILES:
+==============================
+Best Solution: optimization_results/ialo_best_solution.csv
+Economic Analysis: optimization_results/ialo_economic_analysis.csv
+Convergence Plot: figures/ialo_convergence.png
+Energy Flows Plot: figures/ialo_energy_flows.png
+Component Sizing Plot: figures/ialo_component_sizing.png
+Raw Convergence Data: raw_data/ialo_convergence.csv
+Raw Energy Flow Data: raw_data/ialo_energy_flows.csv
+Configuration Used: ialo_config_used.yaml

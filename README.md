@@ -651,3 +651,4 @@ This work is based on advanced research in vehicle-to-grid integration and renew
 ---
 
 **Note**: This implementation is designed for research and educational purposes. For commercial applications, additional validation and regulatory compliance may be required.
+

@@ -1,0 +1,34 @@
+V2G MICROGRID OPTIMIZATION SUMMARY REPORT
+Algorithm: PSO
+Timestamp: 2025-09-13 17:59:48
+==================================================
+
+OPTIMIZATION RESULTS:
+==============================
+Best Fitness: -0.213176
+Execution Time: 437.73 seconds
+
+COMPONENT SIZING:
+==============================
+PV Panels: 10
+Wind Turbines: 5
+Battery Units: 10
+Autonomy Days: 2.21
+
+ECONOMIC ANALYSIS:
+==============================
+Cost of Energy (COE): $0.6056/kWh
+Loss of Power Supply Probability (LPSP): 0.0000
+Renewable Energy Fraction (REF): 1.0000
+Net Present Cost (NPC): $198243.00
+
+OUTPUT FILES:
+==============================
+Best Solution: optimization_results/pso_best_solution.csv
+Economic Analysis: optimization_results/pso_economic_analysis.csv
+Convergence Plot: figures/pso_convergence.png
+Energy Flows Plot: figures/pso_energy_flows.png
+Component Sizing Plot: figures/pso_component_sizing.png
+Raw Convergence Data: raw_data/pso_convergence.csv
+Raw Energy Flow Data: raw_data/pso_energy_flows.csv
+Configuration Used: pso_config_used.yaml

@@ -1,0 +1,34 @@
+V2G MICROGRID OPTIMIZATION SUMMARY REPORT
+Algorithm: ALO
+Timestamp: 2025-09-13 18:00:43
+==================================================
+
+OPTIMIZATION RESULTS:
+==============================
+Best Fitness: -0.093058
+Execution Time: 495.71 seconds
+
+COMPONENT SIZING:
+==============================
+PV Panels: 41
+Wind Turbines: 9
+Battery Units: 13
+Autonomy Days: 3.12
+
+ECONOMIC ANALYSIS:
+==============================
+Cost of Energy (COE): $0.9102/kWh
+Loss of Power Supply Probability (LPSP): 0.0000
+Renewable Energy Fraction (REF): 1.0000
+Net Present Cost (NPC): $300915.90
+
+OUTPUT FILES:
+==============================
+Best Solution: optimization_results/alo_best_solution.csv
+Economic Analysis: optimization_results/alo_economic_analysis.csv
+Convergence Plot: figures/alo_convergence.png
+Energy Flows Plot: figures/alo_energy_flows.png
+Component Sizing Plot: figures/alo_component_sizing.png
+Raw Convergence Data: raw_data/alo_convergence.csv
+Raw Energy Flow Data: raw_data/alo_energy_flows.csv
+Configuration Used: alo_config_used.yaml

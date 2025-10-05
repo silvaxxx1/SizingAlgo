@@ -1,0 +1,44 @@
+V2G MICROGRID OPTIMIZATION - MASTER COMPARISON REPORT
+Timestamp: 2025-09-13 18:02:15
+Run ID: 20250913_175219
+============================================================
+
+ALGORITHM PERFORMANCE SUMMARY:
+========================================
+Total Algorithms: 4
+Successful Runs: 4
+Failed Runs: 0
+
+BEST PERFORMING ALGORITHM: PSO
+========================================
+Best Fitness: -0.213176
+Execution Time: 437.73 seconds
+PV Panels: 10
+Wind Turbines: 5
+Battery Units: 10
+Autonomy Days: 2.21
+Output Directory: outputs/pso/run_20250913_175219
+
+DETAILED COMPARISON TABLE:
+========================================
+Algorithm  Fitness      Time(s)    PV    WT    BT    AD    
+------------------------------------------------------------
+PSO        -0.213176    437.73     10    5     10    2.21  
+IALO       -0.039969    471.22     54    20    10    2.10  
+ALO        -0.093058    495.71     41    9     13    3.12  
+CSA        -0.003835    587.69     67    23    10    2.68  
+
+OUTPUT DIRECTORIES:
+========================================
+Master Comparison: outputs/comparison/run_20250913_175219
+PSO ✓: outputs/pso/run_20250913_175219
+IALO ✓: outputs/ialo/run_20250913_175219
+ALO ✓: outputs/alo/run_20250913_175219
+CSA ✓: outputs/csa/run_20250913_175219
+
+COMPARISON FILES:
+========================================
+Algorithm Comparison: comparison_results/algorithm_comparison.csv
+Convergence Comparison: comparison_figures/algorithm_convergence_comparison.png
+Fitness Comparison: comparison_figures/fitness_comparison.png
+Time Comparison: comparison_figures/time_comparison.png
