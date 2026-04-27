@@ -8,6 +8,7 @@ A comprehensive Python framework for optimizing Vehicle-to-Grid (V2G) integrated
 - [System Architecture](#system-architecture)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
+- [PSO vs ALO Comparison](#pso-vs-alo-comparison)
 - [Configuration Guide](#configuration-guide)
 - [Component Documentation](#component-documentation)
 - [Optimization Algorithms](#optimization-algorithms)
@@ -148,6 +149,71 @@ After completion, results are saved in:
 - `outputs/optimization_results/`: Numerical results and best solutions
 - `outputs/figures/`: Convergence plots and energy flow diagrams
 - `outputs/reports/`: Comprehensive analysis reports
+
+---
+
+## PSO vs ALO Comparison
+
+A self-contained pipeline that runs both **Particle Swarm Optimization (PSO)** and the **Ant-Lion Optimizer (ALO)** against the full 8,760-hour V2G microgrid simulation, then generates a complete set of publication-ready comparison figures and reports.
+
+### What it produces
+
+All outputs are saved to `outputs/pso_alo_comparison/`:
+
+| File | Description |
+|------|-------------|
+| `fig1_convergence.png` | Convergence curves — PSO vs ALO |
+| `fig2_kpi_comparison.png` | COE, LPSP, REF, NPC side-by-side |
+| `fig3_component_sizing.png` | Optimal component counts and capacities |
+| `fig4_energy_sources.png` | Annual energy source distribution |
+| `fig5_operation_modes.png` | System operation mode statistics |
+| `fig6_monte_carlo.png` | Monte Carlo uncertainty analysis (100 EV scenarios) |
+| `fig7_economic_breakdown.png` | NPC cost breakdown by category |
+| `fig8_seasonal.png` | Seasonal energy flow and battery cycles |
+| `fig9_sensitivity.png` | Sensitivity tornado chart (±20% parameter variation) |
+| `fig10_dashboard.png` | Single-page summary dashboard |
+| `comparison_report.md` | Structured data report |
+| `PSO_vs_ALO_Full_Report.md` | Full narrative comparison report |
+
+### Setup (one time)
+
+```bash
+git clone <repo-url>
+cd "Libi1 Project"
+python3 -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install -e ".[dev]"
+```
+
+### Run
+
+```bash
+source .venv/bin/activate
+python3 launch_comparison.py
+```
+
+That's it. The script runs in two steps automatically:
+
+1. **Step 1** — Runs PSO and ALO against the real simulation (takes 30–90 min depending on hardware)
+2. **Step 2** — Generates all 10 figures and 2 reports (takes a few seconds)
+
+### Options
+
+```bash
+python3 launch_comparison.py --iters 50        # fewer iterations, faster run
+python3 launch_comparison.py --pop 20          # smaller population
+python3 launch_comparison.py --pop 20 --iters 50   # quick debug run (~5 min)
+```
+
+### How it works internally
+
+| Script | Role |
+|--------|------|
+| `launch_comparison.py` | Single entry point — calls the two scripts below in sequence |
+| `run_real.py` | Runs PSO and ALO for real, saves timing and results to `real_results.json` |
+| `generate_comparison.py` | Generates all figures and markdown reports |
+
+---
 
 ## Configuration Guide
 
