@@ -175,17 +175,6 @@ All outputs are saved to `outputs/pso_alo_comparison/`:
 | `comparison_report.md` | Structured data report |
 | `PSO_vs_ALO_Full_Report.md` | Full narrative comparison report |
 
-### Setup (one time)
-
-```bash
-git clone <repo-url>
-cd "Libi1 Project"
-python3 -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
-pip install -e ".[dev]"
-```
-
-### Run
 
 ```bash
 source .venv/bin/activate
