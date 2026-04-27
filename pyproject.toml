@@ -50,6 +50,10 @@ dependencies = [
     "cairosvg>=2.7.1",
     "streamlit>=1.40.1",
     "svglib>=1.5.1",
+    "python-pptx>=1.0.2",
+    "beautifulsoup4>=4.14.2",
+    "weasyprint>=61.2",
+    "pdf2image>=1.17.0",
 ]
 
 [project.optional-dependencies]

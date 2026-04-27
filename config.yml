@@ -57,9 +57,9 @@ components:
 # Optimization parameters
 optimization:
   algorithms: ["IALO", "ALO", "PSO", "CSA"]
-  default_algorithm: "IALO"
+  default_algorithm: "PSO"
   population_size: 30
-  max_iterations: 10
+  max_iterations: 100
   ialo:
     alpha: 0.01
     beta: 1.5

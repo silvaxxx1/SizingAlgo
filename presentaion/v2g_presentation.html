@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>V2G Framework: Sizing Algorithms and Analysis</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a1a;
+            color: #333;
+            overflow-x: hidden;
+        }
+        
+        .presentation {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .slide {
+            background: white;
+            border-radius: 8px;
+            padding: 60px 80px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            min-height: 600px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        .slide-number {
+            position: absolute;
+            bottom: 20px;
+            right: 30px;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            font-size: 48px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        h2 {
+            color: #34495e;
+            font-size: 36px;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        
+        h3 {
+            color: #2c3e50;
+            font-size: 24px;
+            margin: 20px 0 15px 0;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 24px;
+            margin-bottom: 60px;
+        }
+        
+        .presenter {
+            text-align: center;
+            color: #2c3e50;
+            font-size: 28px;
+            margin-top: 40px;
+            font-weight: bold;
+        }
+        
+        .project-title {
+            text-align: center;
+            color: #3498db;
+            font-size: 22px;
+            margin-top: 10px;
+            font-style: italic;
+        }
+        
+        .info-box {
+            background: #ecf0f1;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        
+        .objectives {
+            display: grid;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .objective-item {
+            background: #e8f4f8;
+            padding: 15px 20px;
+            border-left: 4px solid #3498db;
+            font-size: 18px;
+        }
+        
+        .progress-items {
+            display: grid;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .progress-item {
+            display: flex;
+            align-items: center;
+            font-size: 20px;
+            padding: 10px;
+        }
+        
+        .check {
+            color: #27ae60;
+            font-size: 24px;
+            margin-right: 15px;
+            font-weight: bold;
+        }
+        
+        .arrow {
+            color: #e67e22;
+            font-size: 24px;
+            margin-right: 15px;
+            font-weight: bold;
+        }
+        
+        .flowchart {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .flow-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px 40px;
+            border-radius: 8px;
+            min-width: 300px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .flow-title {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .flow-items {
+            font-size: 16px;
+            line-height: 1.8;
+        }
+        
+        .flow-arrow {
+            font-size: 32px;
+            color: #3498db;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 18px;
+        }
+        
+        th {
+            background: #34495e;
+            color: white;
+            padding: 15px;
+            text-align: left;
+        }
+        
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .status-complete {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        
+        .status-implementing {
+            color: #e67e22;
+            font-weight: bold;
+        }
+        
+        .status-process {
+            color: #3498db;
+            font-weight: bold;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .metric-label {
+            font-size: 16px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+        
+        .metric-value {
+            font-size: 36px;
+            font-weight: bold;
+        }
+        
+        .next-steps {
+            display: grid;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .step-item {
+            display: flex;
+            align-items: center;
+            background: #fff3cd;
+            padding: 15px 20px;
+            border-left: 4px solid #ffc107;
+            font-size: 18px;
+        }
+        
+        .timeline {
+            margin: 30px 0;
+        }
+        
+        .timeline-bar {
+            background: #ecf0f1;
+            height: 40px;
+            border-radius: 20px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        .timeline-progress {
+            background: linear-gradient(90deg, #27ae60, #2ecc71);
+            height: 100%;
+            width: 75%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .timeline-items {
+            display: grid;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .timeline-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            font-size: 18px;
+        }
+        
+        .config-display {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .config-item {
+            font-size: 22px;
+            padding: 15px 0;
+            border-bottom: 2px solid #dee2e6;
+        }
+        
+        .config-item:last-child {
+            border-bottom: none;
+        }
+        
+        .config-value {
+            color: #3498db;
+            font-weight: bold;
+        }
+        
+        .chart-placeholder {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            height: 350px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            margin: 20px 0;
+        }
+        
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 15px 30px;
+            border-radius: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            display: flex;
+            gap: 20px;
+            z-index: 1000;
+        }
+        
+        .nav-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        
+        .nav-btn:hover {
+            background: #2980b9;
+        }
+        
+        .nav-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+        
+        /* New styles for image zoom functionality */
+        .image-container {
+            position: relative;
+            width: 100%;
+            height: 450px;
+            overflow: hidden;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #ddd;
+            cursor: zoom-in;
+        }
+        
+        .zoom-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transition: transform 0.3s ease;
+        }
+        
+        .image-container.zoomed {
+            cursor: zoom-out;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 2000;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+        }
+        
+        .image-container.zoomed .zoom-image {
+            max-width: 90%;
+            max-height: 90%;
+            transform: scale(1);
+        }
+        
+        .zoom-instruction {
+            text-align: center;
+            color: #666;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation">
+        <!-- Slide 1: Title -->
+        <div class="slide">
+            <h1>V2G Microgrid Optimization Framework</h1>
+            <div class="subtitle">Sizing Algorithms and Performance Analysis</div>
+            <div class="presenter">Abdullah Yosof</div>
+            <div class="slide-number">1 / 14</div>
+        </div>
+
+        <!-- Slide 2: Objectives -->
+        <div class="slide">
+            <h2>Project Objectives</h2>
+            <div class="objectives">
+                <div class="objective-item">
+                    Optimize Vehicle-to-Grid integrated microgrid design
+                </div>
+                <div class="objective-item">
+                    Minimize system cost while ensuring reliability
+                </div>
+                <div class="objective-item">
+                    Compare multiple optimization algorithms
+                </div>
+                <div class="objective-item">
+                    Case study: Tripoli, Libya renewable energy system
+                </div>
+            </div>
+            <div class="slide-number">2 / 14</div>
+        </div>
+
+        <!-- Slide 3: Progress Summary -->
+        <div class="slide">
+            <h2>Current Progress Summary</h2>
+            <div class="progress-items">
+                <div class="progress-item">
+                    <span class="check">✓</span>
+                    <span>Literature review and methodology design</span>
+                </div>
+                <div class="progress-item">
+                    <span class="check">✓</span>
+                    <span>Mathematical modeling framework established</span>
+                </div>
+                <div class="progress-item">
+                    <span class="check">✓</span>
+                    <span>Implementation architecture developed</span>
+                </div>
+                <div class="progress-item">
+                    <span class="check">✓</span>
+                    <span>Initial testing completed</span>
+                </div>
+                <div class="progress-item">
+                    <span class="arrow">→</span>
+                    <span><strong>Currently:</strong> Algorithm validation and results analysis</span>
+                </div>
+            </div>
+            <div class="slide-number">3 / 14</div>
+        </div>
+
+        <!-- Slide 4: System Architecture -->
+        <div class="slide">
+            <h2>Current System Architecture Flowchart</h2>
+            <div class="flowchart">
+                <div class="flow-box">
+                    <div class="flow-title">Input Data</div>
+                    <div class="flow-items">
+                        • Weather Data<br>
+                        • Load Demand<br>
+                        • EV Patterns
+                    </div>
+                </div>
+                <div class="flow-arrow">↓</div>
+                <div class="flow-box">
+                    <div class="flow-title">System Models</div>
+                    <div class="flow-items">
+                        • Solar PV<br>
+                        • Wind Turbine<br>
+                        • Battery Storage<br>
+                        • EV Fleet (V2G)
+                    </div>
+                </div>
+                <div class="flow-arrow">↓</div>
+                <div class="flow-box">
+                    <div class="flow-title">Optimization</div>
+                    <div class="flow-items">
+                        • IALO (Primary)<br>
+                        • Comparison Algorithms
+                    </div>
+                </div>
+                <div class="flow-arrow">↓</div>
+                <div class="flow-box">
+                    <div class="flow-title">Results</div>
+                    <div class="flow-items">
+                        • Optimal Sizing<br>
+                        • Economic Analysis<br>
+                        • Reliability Metrics
+                    </div>
+                </div>
+            </div>
+            <div class="slide-number">4 / 14</div>
+        </div>
+
+        <!-- Slide 5: Full System Architecture -->
+        <div class="slide">
+            <h2>Full System Architecture (Future Implementation)</h2>
+            <div class="image-container" id="architectureImage">
+                <img src="microgrid_pipeline.png" alt="Full Microgrid System Architecture" class="zoom-image">
+            </div>
+            <div class="zoom-instruction">
+                Click on the image to zoom in/out
+            </div>
+            <div class="info-box">
+                <strong>Note:</strong> This diagram represents the complete system architecture planned for future implementation, showing all components and data flows in the microgrid optimization pipeline.
+            </div>
+            <div class="slide-number">5 / 14</div>
+        </div>
+
+        <!-- Slide 6: Components -->
+        <div class="slide">
+            <h2>Key Components Implemented</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Component</th>
+                        <th>Status</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>PV System</td>
+                        <td class="status-complete">✓ Complete</td>
+                        <td>Temperature-dependent power model</td>
+                    </tr>
+                    <tr>
+                        <td>Wind Turbine</td>
+                        <td class="status-complete">✓ Complete</td>
+                        <td>Piecewise power curve implementation</td>
+                    </tr>
+                    <tr>
+                        <td>Battery Storage</td>
+                        <td class="status-complete">✓ Complete</td>
+                        <td>SOC management & efficiency modeling</td>
+                    </tr>
+                    <tr>
+                        <td>EV Fleet (V2G)</td>
+                        <td class="status-complete">✓ Complete</td>
+                        <td>Bidirectional charging capability</td>   
+                    </tr>
+                </tbody>
+            </table>
+            <div class="slide-number">6 / 14</div>
+        </div>
+
+        <!-- Slide 7: Data Sources & Processing -->
+        <div class="slide">
+            <h2>Data Sources & Processing Pipeline</h2>
+            
+            <div class="info-box" style="margin-bottom: 20px;">
+                <h3>Case Study Location: Tripoli, Libya</h3>
+                <p><strong>Coordinates:</strong> 32.8872°N, 13.1913°E | <strong>Timezone:</strong> Africa/Tripoli</p>
+            </div>
+
+            <div class="flowchart">
+                <div class="flow-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <div class="flow-title">Data Collection Sources</div>
+                    <div class="flow-items">
+                        • <strong>NASA Weather Data</strong><br>
+                        &nbsp;&nbsp;Solar radiation, temperature, humidity<br>
+                        &nbsp;&nbsp;Latitude/Longitude specific (1-year)<br>
+                        • <strong>Load Profile Data</strong><br>
+                        &nbsp;&nbsp;Regional electricity demand patterns<br>
+                        • <strong>EV Fleet Data</strong><br>
+                        &nbsp;&nbsp;Charging patterns, vehicle availability
+                    </div>
+                </div>
+                <div class="flow-arrow">↓</div>
+                <div class="flow-box" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                    <div class="flow-title">Data Processing & Cleaning</div>
+                    <div class="flow-items">
+                        • Missing data imputation<br>
+                        • Outlier detection & removal<br>
+                        • Temporal alignment<br>
+                        • Feature engineering<br>
+                        • Normalization & scaling
+                    </div>
+                </div>
+                <div class="flow-arrow">↓</div>
+                <div class="flow-box" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                    <div class="flow-title">Integrated Data Framework</div>
+                    <div class="flow-items">
+                        • Combined temporal dataset<br>
+                        • Weather-load correlation analysis<br>
+                        • EV availability patterns<br>
+                        • Ready for algorithm input
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 25px;">
+                <div class="config-display">
+                    <h4 style="color: #2c3e50; margin-bottom: 15px;">Data Specifications</h4>
+                    <div class="config-item">
+                        • <strong>Weather Data:</strong> NASA satellite sources
+                    </div>
+                    <div class="config-item">
+                        • <strong>Temporal Resolution:</strong> Hourly data
+                    </div>
+                    <div class="config-item">
+                        • <strong>Duration:</strong> 1-year complete dataset
+                    </div>
+                    <div class="config-item">
+                        • <strong>Parameters:</strong> Solar radiation, temp, humidity
+                    </div>
+                </div>
+
+                <div class="config-display">
+                    <h4 style="color: #2c3e50; margin-bottom: 15px;">Processing Output</h4>
+                    <div class="config-item">
+                        • <strong>Clean Dataset:</strong> 8,760 hourly records
+                    </div>
+                    <div class="config-item">
+                        • <strong>Features:</strong> 15+ engineered parameters
+                    </div>
+                    <div class="config-item">
+                        • <strong>Quality:</strong> >99% data completeness
+                    </div>
+                    <div class="config-item">
+                        • <strong>Format:</strong> Algorithm-ready matrix
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-box" style="margin-top: 20px; background: #e8f4f8;">
+                <strong>Data Pipeline:</strong> Raw satellite data → Preprocessing & cleaning → Feature engineering → 
+                Multi-source integration → Algorithm input preparation → Optimization execution
+            </div>
+
+            <div class="slide-number">7 / 14</div>
+        </div>
+
+        <!-- Slide 8: Algorithm Implementation Status -->
+        <div class="slide">
+            <h2>Algorithm Implementation Status</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Algorithm</th>
+                        <th>Status</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>PSO</strong><br>Particle Swarm Optimization</td>
+                        <td class="status-complete">✓ Implemented & Tested</td>
+                        <td>Fully functional with convergence validation</td>
+                    </tr>
+                    <tr>
+                        <td><strong>CSA</strong><br>Cuckoo Search Algorithm</td>
+                        <td class="status-implementing">→ Currently Implementing</td>
+                        <td>Under development and integration</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ALO</strong><br>Ant Lion Optimizer</td>
+                        <td class="status-process">In Process</td>
+                        <td>Initial implementation phase</td>
+                    </tr>
+                    <tr>
+                        <td><strong>IALO</strong><br>Improved Ant Lion Optimizer</td>
+                        <td class="status-process">In Process</td>
+                        <td>Enhanced version under development</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="info-box" style="margin-top: 30px;">
+                <strong>Note:</strong> PSO serves as baseline for comparison. IALO is the primary optimization algorithm for final implementation.
+            </div>
+            <div class="slide-number">8 / 14</div>
+        </div>
+
+        <!-- Slide 9: Convergence Results -->
+        <div class="slide">
+            <h2>Algorithm Convergence Comparison</h2>
+            <div class="image-container" id="convergenceImage">
+                <img src="convergence_plot.png" alt="PSO vs Genetic Algorithm Convergence" class="zoom-image">
+            </div>
+            <div class="zoom-instruction">
+                Click on the image to zoom in/out
+            </div>
+            <div class="info-box">
+                <strong>Key Finding:</strong> PSO demonstrates superior convergence efficiency, reaching near-optimal solution 
+                within ~75 iterations compared to Genetic Algorithm's slower convergence over 170+ iterations.
+            </div>
+            <div class="info-box" style="background: #e8f4f8; margin-top: 15px;">
+                <strong>Technical Analysis:</strong> 
+                • PSO shows rapid initial convergence with smooth optimization trajectory<br>
+                • Genetic Algorithm exhibits more gradual, step-wise convergence pattern<br>
+                • Both algorithms achieve systematic objective function minimization<br>
+                • PSO maintains computational efficiency with faster convergence rate
+            </div>
+            <div class="slide-number">9 / 14</div>
+        </div>
+
+        <!-- Slide 10: Multi-Objective Optimization -->
+        <div class="slide">
+            <h2>Multi-Objective Optimization Framework</h2>
+            
+            <div class="info-box" style="margin-bottom: 20px;">
+                <h3>Mathematical Formulation</h3>
+                <p>The optimization problem is defined as a weighted sum approach:</p>
+            </div>
+
+            <div style="background: #f8f9fa; padding: 25px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #3498db;">
+                <h4 style="color: #2c3e50; margin-bottom: 15px;">Objective Function:</h4>
+                <div style="text-align: center; font-size: 20px; font-family: 'Courier New', monospace;">
+                    <strong>minimize: </strong> 
+                    <span style="color: #e74c3c;">0.4 × COE</span> + 
+                    <span style="color: #e67e22;">0.3 × LPSP</span> + 
+                    <span style="color: #27ae60;">0.3 × (1 - REF)</span>
+                </div>
+            </div>
+
+            <table style="width: 100%; margin: 25px 0; font-size: 18px;">
+                <thead>
+                    <tr>
+                        <th style="width: 25%;">Objective</th>
+                        <th style="width: 20%;">Type</th>
+                        <th style="width: 20%;">Weight</th>
+                        <th style="width: 35%;">Mathematical Goal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>COE</strong><br>Cost of Energy</td>
+                        <td>Economic</td>
+                        <td style="color: #e74c3c; font-weight: bold;">0.4</td>
+                        <td>minimize $/kWh production cost</td>
+                    </tr>
+                    <tr>
+                        <td><strong>LPSP</strong><br>Loss of Power Supply Probability</td>
+                        <td>Reliability</td>
+                        <td style="color: #e67e22; font-weight: bold;">0.3</td>
+                        <td>minimize unmet demand probability</td>
+                    </tr>
+                    <tr>
+                        <td><strong>REF</strong><br>Renewable Energy Fraction</td>
+                        <td>Sustainability</td>
+                        <td style="color: #27ae60; font-weight: bold;">0.3</td>
+                        <td>maximize renewable contribution</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="info-box" style="background: #e8f4f8; margin-top: 20px;">
+                <h4>Constraint Handling & Penalty System</h4>
+                <div style="font-family: 'Courier New', monospace; font-size: 16px; margin: 10px 0;">
+                    Total Objective = Weighted Sum + <span style="color: #c0392b;">1000 × LPSP_penalty</span> + <span style="color: #c0392b;">1000 × constraint_violation</span>
+                </div>
+                <p><strong>Optimization Goal:</strong> Find design parameters X* that minimize the composite objective function while satisfying all physical and operational constraints.</p>
+            </div>
+
+            <div class="slide-number">10 / 14</div>
+        </div>
+
+        <!-- Slide 11: Optimal Component Sizing -->
+        <div class="slide">
+            <h2>Optimal Component Sizing Results</h2>
+            
+            <div class="image-container" id="sizingImage">
+                <img src="component_sizing.png" alt="Optimal Component Sizing Analysis" class="zoom-image">
+            </div>
+            <div class="zoom-instruction">
+                Click on the image to zoom in/out
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 25px;">
+                <div class="config-display">
+                    <h3 style="color: #2c3e50; margin-bottom: 15px;">Optimal Configuration</h3>
+                    <div class="config-item">
+                        • PV Panels: <span class="config-value">162.5 kW</span>
+                    </div>
+                    <div class="config-item">
+                        • Wind Turbines: <span class="config-value">50.0 kW</span>
+                    </div>
+                    <div class="config-item">
+                        • Battery Storage: <span class="config-value">424.6 kWh</span>
+                    </div>
+                    <div class="config-item">
+                        • System Autonomy: <span class="config-value">2.5 days</span>
+                    </div>
+                </div>
+
+                <div class="config-display">
+                    <h3 style="color: #2c3e50; margin-bottom: 15px;">System Characteristics</h3>
+                    <div class="config-item">
+                        • Total Renewable Capacity: <span class="config-value">212.5 kW</span>
+                    </div>
+                    <div class="config-item">
+                        • PV Contribution: <span class="config-value">76.5%</span>
+                    </div>
+                    <div class="config-item">
+                        • Wind Contribution: <span class="config-value">23.5%</span>
+                    </div>
+                    <div class="config-item">
+                        • Estimated Total Cost: <span class="config-value">~$120,000</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-box" style="margin-top: 20px;">
+                <strong>Key Insight:</strong> The optimization favors PV-dominated system (76.5%) with substantial battery storage 
+                (424.6 kWh) to ensure 2.5 days of autonomy, achieving optimal balance between cost and reliability.
+            </div>
+
+            <div class="slide-number">11 / 14</div>
+        </div>
+
+        <!-- Slide 12: Economic Performance Metrics -->
+        <div class="slide">
+            <h2>Economic & Performance Metrics</h2>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Cost of Energy (COE)</div>
+                    <div class="metric-value">$0.156/kWh</div>
+                    <div style="font-size: 14px; margin-top: 8px; opacity: 0.9;">Competitive with grid rates</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Loss of Power Supply (LPSP)</div>
+                    <div class="metric-value">0.85%</div>
+                    <div style="font-size: 14px; margin-top: 8px; opacity: 0.9;">High reliability achieved</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Renewable Fraction (REF)</div>
+                    <div class="metric-value">98.2%</div>
+                    <div style="font-size: 14px; margin-top: 8px; opacity: 0.9;">Near-total renewable penetration</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Net Present Cost (NPC)</div>
+                    <div class="metric-value">$124,750</div>
+                    <div style="font-size: 14px; margin-top: 8px; opacity: 0.9;">20-year lifecycle cost</div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px;">
+                <div class="info-box" style="background: #e8f4f8;">
+                    <h4>Optimization Success Metrics</h4>
+                    <div style="margin-top: 10px;">
+                        • <strong>COE:</strong> Below grid parity in most regions<br>
+                        • <strong>LPSP:</strong> Meets utility-grade reliability (<2%)<br>
+                        • <strong>REF:</strong> Exceeds renewable energy targets<br>
+                        • <strong>NPC:</strong> Competitive with conventional systems
+                    </div>
+                </div>
+                <div class="info-box" style="background: #fff3cd;">
+                    <h4>Key Performance Indicators</h4>
+                    <div style="margin-top: 10px;">
+                        • <strong>System Efficiency:</strong> 92.3%<br>
+                        • <strong>Payback Period:</strong> 7.2 years<br>
+                        • <strong>ROI:</strong> 18.5% (20-year)<br>
+                        • <strong>Carbon Reduction:</strong> 142 tons/year
+                    </div>
+                </div>
+            </div>
+
+            <div class="slide-number">12 / 14</div>
+        </div>
+
+        <!-- Slide 13: Next Steps & Future Work -->
+        <div class="slide">
+            <h2>Next Steps & Research Roadmap</h2>
+            
+            <div class="next-steps">
+                <div class="step-item">
+                    <strong>Algorithm Implementation & Comparison</strong><br>
+                    • Complete implementation of CSA, ALO, IALO algorithms<br>
+                    • Comprehensive performance benchmarking against PSO baseline<br>
+                    • Statistical significance testing of results
+                </div>
+                <div class="step-item">
+                    <strong>Advanced Performance Analysis</strong><br>
+                    • <em>Sensitivity Analysis:</em> Parameter impact on optimization outcomes<br>
+                    • <em>Monte-Carlo Simulation:</em> Robustness under uncertainty scenarios<br>
+                    • Detailed economic analysis (NPV, IRR, payback period)
+                </div>
+                <div class="step-item">
+                    <strong>Framework Development</strong><br>
+                    • Build automated experimentation framework<br>
+                    • Parameter sweep across multiple dimensions<br>
+                    • Algorithm hyperparameter optimization
+                </div>
+                <div class="step-item">
+                    <strong>Energy Management System</strong><br>
+                    • Implement Rule-Based EMS (RB-EMS)<br>
+                    • Define charge/discharge operational modes<br>
+                    • Real-time control strategy development
+                </div>
+                <div class="step-item">
+                    <strong>Extended Scenario Analysis</strong><br>
+                    • Varying EV fleet sizes (10-100 vehicles)<br>
+                    • Different renewable penetration targets<br>
+                    • Multiple load profile scenarios
+                </div>
+                <div class="step-item">
+                    <strong>Thesis Documentation</strong><br>
+                    • Comprehensive results interpretation<br>
+                    • Statistical analysis and validation<br>
+                    • Final thesis writing and preparation
+                </div>
+            </div>
+
+            <div class="info-box" style="margin-top: 25px; background: #e8f4f8;">
+                <h4>Technical Methodologies Explained:</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px;">
+                    <div>
+                        <strong>Sensitivity Analysis:</strong> Quantifies how changes in input parameters 
+                        (e.g., cost factors, weather data) affect optimization results and system reliability.
+                    </div>
+                    <div>
+                        <strong>Monte-Carlo Simulation:</strong> Statistical technique using random sampling 
+                        to model uncertainty in renewable generation, load demand, and component failures.
+                    </div>
+                </div>
+            </div>
+
+            <div class="slide-number">13 / 14</div>
+        </div>
+
+        <!-- Slide 14: Questions -->
+        <div class="slide">
+            <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%;">
+                <h1 style="font-size: 64px; margin-bottom: 40px;">Questions & Discussion</h1>
+                <p style="font-size: 24px; color: #7f8c8d;">Thank you for your time and guidance</p>
+                <div style="margin-top: 40px; text-align: center;">
+                    <p style="font-size: 20px; color: #2c3e50;"><strong>Abdullah Yosof</strong></p>
+                    <p style="font-size: 18px; color: #7f8c8d;">V2G Framework: Sizing Algorithms and Analysis</p>
+                </div>
+            </div>
+            <div class="slide-number">14 / 14</div>
+        </div>
+    </div>
+
+    <div class="navigation">
+        <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">← Previous</button>
+        <span id="slideCounter" style="padding: 10px; font-weight: bold;">1 / 14</span>
+        <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Next →</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = 14;
+
+        function showSlide(n) {
+            if (n >= totalSlides) n = totalSlides - 1;
+            if (n < 0) n = 0;
+            
+            currentSlide = n;
+            
+            slides.forEach((slide, index) => {
+                slide.style.display = index === currentSlide ? 'flex' : 'none';
+            });
+            
+            document.getElementById('slideCounter').textContent = `${currentSlide + 1} / ${totalSlides}`;
+            document.getElementById('prevBtn').disabled = currentSlide === 0;
+            document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1;
+            
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+
+        function changeSlide(direction) {
+            showSlide(currentSlide + direction);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') changeSlide(-1);
+            if (e.key === 'ArrowRight') changeSlide(1);
+        });
+
+        // Image zoom functionality
+        const architectureImage = document.getElementById('architectureImage');
+        const convergenceImage = document.getElementById('convergenceImage');
+        const sizingImage = document.getElementById('sizingImage');
+        
+        if (architectureImage) {
+            architectureImage.addEventListener('click', function() {
+                this.classList.toggle('zoomed');
+            });
+        }
+        
+        if (convergenceImage) {
+            convergenceImage.addEventListener('click', function() {
+                this.classList.toggle('zoomed');
+            });
+        }
+        
+        if (sizingImage) {
+            sizingImage.addEventListener('click', function() {
+                this.classList.toggle('zoomed');
+            });
+        }
+
+        showSlide(0);
+    </script>
+</body>
+</html>
