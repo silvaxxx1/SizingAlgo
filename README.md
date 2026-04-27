@@ -688,17 +688,6 @@ If you use this framework in your research, please cite:
 }
 ```
 
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Support and Contact
-
-- **Documentation**: [Project Wiki](https://github.com/your-repo/v2g-microgrid-optimization/wiki)
-- **Issues**: [GitHub Issues](https://github.com/your-repo/v2g-microgrid-optimization/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-repo/v2g-microgrid-optimization/discussions)
-- **Email**: research@v2g-optimization.com
-
 ## Acknowledgments
 
 This work is based on advanced research in vehicle-to-grid integration and renewable energy optimization. We acknowledge the contributions of the research community and the open-source software ecosystem that made this implementation possible.
